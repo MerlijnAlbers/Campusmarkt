@@ -192,6 +192,62 @@ Alleen e-mailadressen van `@my.nyenrode.nl` kunnen een account aanmaken; dit wor
 database (`allowed_email_domain()` in `supabase/migrations/0001_init.sql`), niet alleen in de
 client.
 
+## Rollen en beveiliging
+
+Er zijn precies twee rollen: `student` (standaard) en `admin` (precies één account). De scheiding
+wordt op meerdere, onafhankelijke plekken afgedwongen — niet op één plek die bij een foutje alles
+openzet:
+
+1. **Database**: elke tabel heeft RLS aan; de rol staat alleen in `profiles.role` (nooit in
+   `user_metadata` of iets anders dat de client zelf kan meegeven) en wordt nergens via de app
+   zelf gewijzigd. Elke muterende beheerfunctie begint met `if not is_admin_mfa() then raise
+   exception 'Geen toegang'; end if;` — dat combineert "is dit een beheerder" én "heeft deze
+   sessie MFA voltooid (aal2)".
+2. **Server/middleware**: `getViewer()` (`lib/auth/getViewer.ts`) leest de rol en AAL vers uit de
+   database/sessie bij elke request. Niet-beheerders die `/admin/**` proberen te bereiken krijgen
+   een 404 (geen redirect — dat zou verraden dat het beheer bestaat); beheerders zonder AAL2
+   worden naar `/admin/mfa` gestuurd.
+3. **Layout**: `app/(app)/admin/layout.tsx` herhaalt de rolcheck, onafhankelijk van de middleware.
+4. **UI**: de navigatie (`components/AppShell.tsx`) toont de "Beheer"-sectie en het
+   "Beheerder"-label alleen als `isAdmin` klopt — maar dat is kosmetisch, geen beveiliging; de
+   echte afdwinging zit in de drie lagen hierboven.
+
+### Wie mag wat
+
+| Actie | Niet ingelogd | Speler | Beheerder |
+| --- | --- | --- | --- |
+| Open/gesloten/afgewikkelde markten bekijken | ❌ | ✅ | ✅ |
+| Conceptmarkten bekijken | ❌ | ❌ | ✅ |
+| Handelen (tenzij geblokkeerd of uitgesloten) | ❌ | ✅ | ✅ (zichtbaar als "Beheerder" in het logboek) |
+| Eigen profiel/posities/transacties lezen | ❌ | ✅ (alleen eigen) | ✅ (alle, alleen lezen) |
+| Markt aanmaken/openen/sluiten/afwikkelen/annuleren/verwijderen | ❌ | ❌ | ✅ (MFA vereist) |
+| Uitsluitingen beheren | ❌ | ❌ | ✅ (MFA vereist) |
+| Spelers blokkeren/deblokkeren, punten corrigeren | ❌ | ❌ | ✅ (MFA vereist) |
+| Auditlog lezen | ❌ | ❌ | ✅ |
+| Rol `admin` toekennen | ❌ | ❌ | ❌ — alleen via een eenmalige, handmatige SQL-opdracht (zie "Beheerdersaccount" hierboven), nooit via de app |
+
+Zie "Beheerdersaccount" hierboven voor hoe het beheerdersaccount wordt toegewezen, en
+"Tweestapsverificatie (MFA) voor beheerders" voor het instellen, kwijtraken van de authenticator
+en het compromitteringsplan.
+
+### Controleren of de scheiding nog klopt
+
+Twee hulpmiddelen om regressies op te sporen (beide alleen lokaal, tegen de lokale
+Supabase-instantie en de testaccounts uit `seed.sql`):
+
+```bash
+npm run audit:roles   # database- en sessiechecks: RLS, grants, "Geen toegang" voor
+                       # niet-beheerders/beheerders-zonder-MFA, en dat MFA het ook echt opent
+npm run test:e2e       # Playwright: 404 voor niet-admin op /admin, MFA-verplichting, geen
+                       # Beheer-navigatie voor spelers, geen handelsknop voor geblokkeerde spelers
+```
+
+`npm run audit:roles` (`scripts/role-audit.ts`) logt in als de vaste testaccounts, probeert elke
+beheerfunctie aan te roepen vanuit elke rol/AAL-combinatie, en controleert via een directe
+Postgres-verbinding dat RLS overal aanstaat, dat er precies één beheerder is, dat geen gevoelige
+tabel een `using (true)`-leesbeleid heeft, en dat `anon` geen `EXECUTE` heeft op beheerfuncties.
+`npm run test:e2e` (`e2e/roles.spec.ts`) test dezelfde scheiding vanuit een echte browser.
+
 ## Belangrijke regels (zie ook de bouwprompt)
 
 - Speelpunten hebben geen geldwaarde en zijn nooit inwisselbaar voor geld.
