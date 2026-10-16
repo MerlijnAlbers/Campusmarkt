@@ -286,6 +286,7 @@ export type Database = {
           email: string;
           id: string;
           role: Database["public"]["Enums"]["user_role"];
+          show_name_in_feed: boolean;
         };
         ComputedFields: never;
         Insert: {
@@ -295,6 +296,7 @@ export type Database = {
           email: string;
           id: string;
           role?: Database["public"]["Enums"]["user_role"];
+          show_name_in_feed?: boolean;
         };
         Update: {
           balance?: number;
@@ -303,6 +305,7 @@ export type Database = {
           email?: string;
           id?: string;
           role?: Database["public"]["Enums"]["user_role"];
+          show_name_in_feed?: boolean;
         };
         Relationships: [];
       };
@@ -459,11 +462,58 @@ export type Database = {
           user_id: string;
         }[];
       };
+      get_market_stats: {
+        Args: { p_market?: string };
+        Returns: {
+          b: number;
+          closes_at: string;
+          last_trade_at: string;
+          market_id: string;
+          market_value: number;
+          n_outcomes: number;
+          outcomes: Json;
+          pot: number;
+          spark: number[];
+          status: Database["public"]["Enums"]["market_status"];
+          trade_count: number;
+          trader_count: number;
+          volume_24h: number;
+          volume_total: number;
+        }[];
+      };
       get_price_history: {
         Args: { p_market: string };
         Returns: {
           created_at: string;
           probs_after: number[];
+        }[];
+      };
+      get_public_trades: {
+        Args: {
+          p_before_at?: string;
+          p_before_id?: string;
+          p_limit?: number;
+          p_market?: string;
+          p_only_mine?: boolean;
+          p_outcome?: string;
+          p_side?: string;
+        };
+        Returns: {
+          avg_price: number;
+          created_at: string;
+          id: string;
+          is_me: boolean;
+          market_id: string;
+          market_title: string;
+          outcome_id: string;
+          outcome_label: string;
+          outcome_sort: number;
+          points: number;
+          prob_after: number;
+          prob_before: number;
+          shares: number;
+          side: string;
+          trader_name: string;
         }[];
       };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
