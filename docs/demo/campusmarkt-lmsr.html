@@ -1,0 +1,535 @@
+<title>Campusmarkt LMSR-simulator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: drie-paneels handelsbureau: stellingen | actieve markt | stand & logboek */
+:root{
+  --bg:#eef1ee; --surface:#fbfcfa; --sunk:#e3e8e4; --line:#cdd5cf; --ink:#17231e; --muted:#55625b;
+  --accent:#2f3fb0; --accent-ink:#ffffff;
+  --o1:#0e7a68; --o2:#a03268; --o3:#a86400; --o4:#4251c9; --o5:#5b6770;
+  --good:#1b7737; --bad:#b4262b;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#101714; --surface:#17201c; --sunk:#0c1210; --line:#2a3731; --ink:#e3ebe6; --muted:#98a69e;
+  --accent:#8e9cff; --accent-ink:#0f1430;
+  --o1:#3cc4aa; --o2:#e070a6; --o3:#e3a23a; --o4:#8e9cff; --o5:#9aa8b3;
+  --good:#5bcf7f; --bad:#ff8085; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101714; --surface:#17201c; --sunk:#0c1210; --line:#2a3731; --ink:#e3ebe6; --muted:#98a69e;
+  --accent:#8e9cff; --accent-ink:#0f1430;
+  --o1:#3cc4aa; --o2:#e070a6; --o3:#e3a23a; --o4:#8e9cff; --o5:#9aa8b3;
+  --good:#5bcf7f; --bad:#ff8085; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:1380px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+.mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 24px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.brand h1{font-size:1.75rem;font-weight:700}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:.86rem}
+.who{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.who label{font-size:.8rem;color:var(--muted)}
+select,input,textarea,button{font:inherit;color:inherit}
+select,input[type=number],input[type=text],textarea{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 10px;width:100%}
+.who select{width:auto}
+textarea{resize:vertical}
+.chip{font-family:var(--f-mono);font-variant-numeric:tabular-nums;background:var(--sunk);border-radius:999px;padding:6px 12px;font-size:.9rem;white-space:nowrap}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:8px 14px;cursor:pointer;font-weight:500;line-height:1.2}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn.sm{padding:5px 10px;font-size:.85rem}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn.danger{color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.grid{display:grid;grid-template-columns:290px minmax(0,1fr) 310px;gap:20px;align-items:start}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:1120px){.grid{grid-template-columns:270px minmax(0,1fr)}.side{grid-column:1 / -1;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px;align-items:start}}
+@media (max-width:780px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin:0 0 10px}
+.hint{color:var(--muted);font-size:.84rem;margin:6px 0 0}
+.msg{font-size:.88rem;margin:8px 0 0;min-height:1.3em}
+.msg.ok{color:var(--good)} .msg.err{color:var(--bad)}
+
+/* marktenlijst */
+.mlist{display:flex;flex-direction:column;gap:4px}
+.mitem{display:block;width:100%;text-align:left;background:transparent;border:1px solid transparent;border-radius:8px;padding:10px;cursor:pointer}
+.mitem:hover{background:var(--sunk)}
+.mitem[aria-current="true"]{background:var(--sunk);border-color:var(--line)}
+.mitem .t{font-weight:500;font-size:.92rem;line-height:1.35}
+.mitem .s{display:flex;justify-content:space-between;gap:8px;font-size:.78rem;color:var(--muted);margin-top:6px}
+.stack{display:flex;height:6px;border-radius:3px;overflow:hidden;margin-top:8px;background:var(--sunk)}
+.stack span{display:block;height:100%}
+details>summary{cursor:pointer;font-weight:600;list-style:none}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:"+ ";color:var(--accent)}
+details[open]>summary::before{content:"− "}
+form{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+form label{font-size:.82rem;color:var(--muted);margin-top:6px}
+form .btn{margin-top:10px;align-self:flex-start}
+
+/* markt */
+.mtop{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:8px}
+.meta{font-size:.8rem;color:var(--muted);font-family:var(--f-mono)}
+.pill{display:inline-block;font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;padding:2px 8px;border-radius:999px;border:1px solid currentColor}
+.pill.open{color:var(--good)} .pill.resolved{color:var(--accent)} .pill.cancelled{color:var(--muted)}
+.mhead h2{font-size:1.55rem;font-weight:700;line-height:1.2}
+.probs{display:flex;flex-direction:column;gap:12px;margin-top:18px}
+.prow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:baseline}
+.oname{display:flex;align-items:center;gap:8px;font-weight:500;min-width:0}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;display:inline-block}
+.win{color:var(--good);font-size:.8rem}
+.big{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:1.25rem;font-weight:600}
+.bar{grid-column:1 / -1;height:10px;background:var(--sunk);border-radius:5px;overflow:hidden}
+.bar span{display:block;height:100%;transition:width .35s ease}
+.chart{margin:20px 0 0}
+.chart svg{width:100%;height:auto;display:block}
+.chart figcaption{font-size:.78rem;color:var(--muted);margin-top:4px}
+.gl{stroke:var(--line);stroke-width:1}
+.ax{fill:var(--muted);font:11px var(--f-mono)}
+.el{font:600 12px var(--f-mono)}
+
+/* ticket */
+.ticket{display:flex;flex-direction:column;gap:12px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{--c:var(--accent);flex:1 1 120px;display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;font-weight:500}
+.seg button[aria-pressed="true"]{border:2px solid var(--c);padding:9px 11px;background:color-mix(in srgb,var(--c) 11%,var(--surface))}
+.seg.sm button{flex:0 1 auto;padding:6px 12px;justify-content:center;font-size:.88rem}
+.seg.sm button[aria-pressed="true"]{padding:5px 11px}
+.row{display:flex;flex-wrap:wrap;gap:10px 16px}
+.amtrow{display:grid;grid-template-columns:minmax(0,220px) auto;gap:6px 10px;align-items:center}
+.amtrow label{grid-column:1 / -1;font-size:.82rem;color:var(--muted)}
+.quick{display:flex;flex-wrap:wrap;gap:6px}
+@media (max-width:480px){.amtrow{grid-template-columns:minmax(0,1fr)}}
+.quote{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;background:var(--sunk);border-radius:8px;padding:12px 14px;font-size:.9rem;margin:0}
+.quote dt{color:var(--muted)}
+.quote dd{margin:0;font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right}
+.quote .err{grid-column:1 / -1;color:var(--bad)}
+.go{align-self:flex-start;font-size:.95rem;padding:10px 18px}
+
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:16px;align-items:start}
+.tw{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:.87rem}
+.tbl th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)}
+.tbl td{padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.tbl .r{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pos{color:var(--good)} .neg{color:var(--bad)}
+.stackbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.confirm{background:var(--sunk);border-radius:8px;padding:12px;margin-top:10px;font-size:.9rem}
+
+.math summary{font-family:var(--f-display);font-size:1.05rem}
+.eq{font-family:var(--f-mono);background:var(--sunk);border-radius:8px;padding:10px 12px;margin:14px 0;font-size:.92rem;overflow-x:auto;white-space:nowrap}
+.kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;margin:0;font-size:.88rem}
+.kv dt{color:var(--muted)} .kv dd{margin:0;text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.math p{font-size:.9rem;max-width:68ch}
+
+/* zijkolom */
+.lb tr{cursor:pointer}
+.lb tr.me td{font-weight:600}
+.lb .rank{color:var(--muted);font-family:var(--f-mono);width:1.5em}
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;max-height:420px;overflow-y:auto}
+.log li{font-size:.85rem;line-height:1.4;border-left:3px solid var(--line);padding-left:10px}
+.log .lm{color:var(--muted);font-size:.78rem}
+.foot{color:var(--muted);font-size:.8rem;text-align:center}
+@media (prefers-reduced-motion: reduce){.bar span{transition:none}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Campusmarkt</h1>
+      <p>LMSR-simulator met speelpunten · iedereen start met 1.000 punten · 1 aandeel van de juiste uitkomst = 1 punt</p>
+    </div>
+    <div class="who">
+      <label for="player">Je speelt als</label>
+      <select id="player"></select>
+      <span class="chip" id="bal"></span>
+      <button class="btn sm" type="button" data-act="reset" id="resetbtn">Demo opnieuw</button>
+    </div>
+  </header>
+
+  <main class="grid">
+    <div class="col">
+      <section class="panel">
+        <p class="label">Stellingen</p>
+        <div class="mlist" id="mlist"></div>
+      </section>
+      <details class="panel" id="newwrap">
+        <summary>Nieuwe stelling</summary>
+        <form id="newm">
+          <label for="nm-title">Stelling of vraag</label>
+          <input id="nm-title" type="text" required placeholder="Bijv. Komt er voor de kerst een koffieautomaat in gebouw B?">
+          <label for="nm-out">Uitkomsten (één per regel, 2 tot 5)</label>
+          <textarea id="nm-out" rows="3">Ja
+Nee</textarea>
+          <label for="nm-b">Liquiditeit b</label>
+          <input id="nm-b" type="number" min="10" step="10" value="150">
+          <p class="hint" id="nm-hint"></p>
+          <button class="btn primary" type="submit">Stelling openen</button>
+          <p class="msg" id="nm-msg"></p>
+        </form>
+      </details>
+    </div>
+
+    <div class="col" id="detail"></div>
+
+    <div class="col side">
+      <section class="panel">
+        <p class="label">Klassement</p>
+        <div class="tw"><table class="tbl lb" id="lb"></table></div>
+        <p class="hint">Totaal = punten op zak + waarde van open posities tegen de huidige kans. Klik op een naam om van speler te wisselen.</p>
+        <form id="newp">
+          <label for="np-name">Testspeler toevoegen</label>
+          <div class="row"><input id="np-name" type="text" placeholder="Naam" style="flex:1 1 140px;width:auto"><button class="btn sm" type="submit" style="margin-top:0">Toevoegen</button></div>
+        </form>
+      </section>
+      <section class="panel">
+        <p class="label">Logboek</p>
+        <ul class="log" id="log"></ul>
+      </section>
+    </div>
+  </main>
+  <p class="foot">Speelpunten hebben geen geldwaarde en zijn niet inwisselbaar. Je gegevens blijven alleen in deze browser.</p>
+</div>
+
+<script>
+const COLORS=['var(--o1)','var(--o2)','var(--o3)','var(--o4)','var(--o5)'];
+const START=1000, KEY='campusmarkt-lmsr-v1';
+let S=null;
+const UI={outcome:0,mode:'shares',side:'buy',amt:20,pending:null,flash:null};
+
+const nf=d=>new Intl.NumberFormat('nl-NL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const F0=nf(0),F1=nf(1),F2=nf(2),F3=nf(3);
+const pts=v=>F1.format(Math.abs(v)<0.05?0:v);
+const pct=p=>F1.format(p*100)+'%';
+const sgn=v=>(v>0.05?'+':'')+pts(v);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+
+/* ---------- LMSR-kern ---------- */
+function lse(q,b){const x=q.map(v=>v/b);const m=Math.max(...x);let s=0;for(const v of x)s+=Math.exp(v-m);return m+Math.log(s);}
+function C(q,b){return b*lse(q,b);}                       // kostenfunctie
+function P(q,b){const x=q.map(v=>v/b);const m=Math.max(...x);const e=x.map(v=>Math.exp(v-m));const s=e.reduce((a,c)=>a+c,0);return e.map(v=>v/s);} // prijzen = kansen
+function tcost(m,i,d){const q2=m.q.slice();q2[i]+=d;return C(q2,m.b)-C(m.q,m.b);} // kosten van d aandelen (negatief = opbrengst)
+function sharesForBudget(m,i,B){let hi=Math.max(1,B),n=0;while(tcost(m,i,hi)<B&&n++<60)hi*=2;let lo=0;for(let k=0;k<80;k++){const mid=(lo+hi)/2;if(tcost(m,i,mid)<=B)lo=mid;else hi=mid;}return lo;}
+function sharesForProceeds(m,i,R,held){const pr=d=>-tcost(m,i,-d);if(pr(held)<R-1e-9)return null;let lo=0,hi=held;for(let k=0;k<80;k++){const mid=(lo+hi)/2;if(pr(mid)>=R)hi=mid;else lo=mid;}return hi;}
+
+/* ---------- toestand ---------- */
+const mk=id=>S.markets.find(m=>m.id===id);
+const pl=id=>S.players.find(p=>p.id===id);
+function pos(mid,pid){S.pos[mid]??={};const m=mk(mid);return S.pos[mid][pid]??={shares:m.outcomes.map(()=>0),spent:0};}
+function newMarket(title,outcomes,b){const n=outcomes.length;return {id:uid(),title,outcomes,b,q:outcomes.map(()=>0),status:'open',winner:null,history:[outcomes.map(()=>1/n)]};}
+
+function exec(pid,mid,i,d){
+  const m=mk(mid),p=pl(pid);
+  if(!m||m.status!=='open')return {ok:false,msg:'Deze markt is gesloten.'};
+  if(!(Math.abs(d)>1e-9))return {ok:false,msg:'Vul een aantal groter dan 0 in.'};
+  const ps=pos(mid,pid);
+  if(d<0&&ps.shares[i]+d<-1e-9)return {ok:false,msg:`Je hebt maar ${F2.format(ps.shares[i])} aandelen ${m.outcomes[i]}.`};
+  const c=tcost(m,i,d);
+  if(c>p.balance+1e-9)return {ok:false,msg:`Te weinig punten: dit kost ${pts(c)}, je hebt ${pts(p.balance)}.`};
+  const p0=P(m.q,m.b)[i];
+  p.balance-=c; ps.shares[i]+=d; if(Math.abs(ps.shares[i])<1e-9)ps.shares[i]=0; ps.spent+=c; m.q[i]+=d;
+  const probs=P(m.q,m.b); m.history.push(probs);
+  S.log.push({type:'trade',pid,mid,i,d,c,p0,p1:probs[i]});
+  return {ok:true,c,d};
+}
+function resolveM(mid,w){
+  const m=mk(mid),payouts={};
+  for(const [pid,ps] of Object.entries(S.pos[mid]||{})){const a=ps.shares[w];if(a>0){pl(pid).balance+=a;payouts[pid]=a;}}
+  m.collected=C(m.q,m.b)-C(m.q.map(()=>0),m.b); m.house=m.collected-m.q[w];
+  m.status='resolved'; m.winner=w; m.payouts=payouts;
+  S.log.push({type:'resolve',mid,w});
+}
+function voidM(mid){
+  const m=mk(mid);
+  for(const [pid,ps] of Object.entries(S.pos[mid]||{})){pl(pid).balance+=ps.spent;}
+  m.status='cancelled'; S.log.push({type:'void',mid});
+}
+function seed(){
+  S={players:[],markets:[],pos:{},log:[],active:null,mkt:null};
+  ['Sanne','Daan','Noor','Mehmet'].forEach(n=>S.players.push({id:uid(),name:n,balance:START}));
+  const m1=newMarket('Wint team Logistiek het zaalvoetbaltoernooi in december?',['Ja','Nee'],150);
+  const m2=newMarket('Hoeveel studenten kopen een kaartje voor het kerstgala?',['Minder dan 200','200 tot 350','Meer dan 350'],150);
+  const m3=newMarket('Gaat de kantine vóór 1 januari ook op zaterdag open?',['Ja','Nee'],100);
+  S.markets.push(m1,m2,m3);
+  const [a,b,c,d]=S.players.map(p=>p.id);
+  exec(a,m1.id,0,60);exec(b,m1.id,1,40);exec(c,m1.id,0,80);exec(d,m1.id,1,30);exec(a,m1.id,0,-20);exec(b,m1.id,0,25);
+  exec(b,m2.id,1,70);exec(c,m2.id,2,50);exec(d,m2.id,0,25);exec(a,m2.id,1,40);
+  exec(d,m3.id,1,45);exec(c,m3.id,0,20);
+  S.active=a; S.mkt=m1.id;
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function load(){try{const r=localStorage.getItem(KEY);if(r)S=JSON.parse(r);}catch(e){S=null;}if(!S||!Array.isArray(S.players)||!S.players.length)seed();}
+
+/* ---------- weergave ---------- */
+function render(){renderTop();renderList();renderDetail();renderSide();save();}
+
+function renderTop(){
+  const sel=document.getElementById('player');
+  sel.innerHTML=S.players.map(p=>`<option value="${p.id}"${p.id===S.active?' selected':''}>${esc(p.name)}</option>`).join('');
+  document.getElementById('bal').textContent=`${pts(pl(S.active).balance)} punten`;
+}
+
+function renderList(){
+  const el=document.getElementById('mlist');
+  el.innerHTML=S.markets.slice().reverse().map(m=>{
+    const pr=m.status==='resolved'?m.outcomes.map((_,i)=>i===m.winner?1:0):P(m.q,m.b);
+    const top=pr.indexOf(Math.max(...pr));
+    const st=m.status==='open'?`${esc(m.outcomes[top])} ${pct(pr[top])}`:m.status==='resolved'?`Uitkomst: ${esc(m.outcomes[m.winner])}`:'Geannuleerd';
+    const n=m.history.length-1;
+    return `<button type="button" class="mitem" data-act="market" data-id="${m.id}" aria-current="${m.id===S.mkt}">
+      <div class="t">${esc(m.title)}</div>
+      <div class="stack">${pr.map((p,i)=>`<span style="width:${(p*100).toFixed(2)}%;background:${COLORS[i]}"></span>`).join('')}</div>
+      <div class="s"><span>${st}</span><span>${n} ${n===1?'transactie':'transacties'}</span></div></button>`;
+  }).join('');
+}
+
+function chart(m){
+  const W=640,H=230,L=44,R=58,T=12,B=28,iw=W-L-R,ih=H-T-B,h=m.history,N=h.length;
+  const x=i=>L+(N<=1?0:i/(N-1))*iw, y=p=>T+(1-p)*ih;
+  let g='';
+  for(const v of [0,.25,.5,.75,1])g+=`<line x1="${L}" x2="${L+iw}" y1="${y(v)}" y2="${y(v)}" class="gl"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end" class="ax">${v*100}%</text>`;
+  let lines='';const labels=[];
+  m.outcomes.forEach((o,k)=>{
+    const p=N<=1?`${x(0)},${y(h[0][k])} ${L+iw},${y(h[0][k])}`:h.map((r,i)=>`${x(i).toFixed(1)},${y(r[k]).toFixed(1)}`).join(' ');
+    lines+=`<polyline points="${p}" fill="none" style="stroke:${COLORS[k]}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    labels.push({k,v:h[N-1][k],y:y(h[N-1][k])});
+  });
+  labels.sort((a,b)=>a.y-b.y);
+  for(let i=1;i<labels.length;i++)if(labels[i].y-labels[i-1].y<14)labels[i].y=labels[i-1].y+14;
+  const last=labels.length-1; if(labels[last].y>T+ih)labels[last].y=T+ih;
+  for(let i=last-1;i>=0;i--)if(labels[i+1].y-labels[i].y<14)labels[i].y=labels[i+1].y-14;
+  const lab=labels.map(l=>`<circle cx="${L+iw}" cy="${y(l.v)}" r="3.5" style="fill:${COLORS[l.k]}"/><text x="${L+iw+9}" y="${l.y+4}" class="el" style="fill:${COLORS[l.k]}">${F0.format(l.v*100)}%</text>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Koersverloop van de kansen">${g}${lines}${lab}
+    <text x="${L}" y="${H-8}" class="ax">start</text><text x="${L+iw}" y="${H-8}" text-anchor="end" class="ax">nu, na ${N-1} transacties</text></svg>`;
+}
+
+function renderDetail(){
+  const el=document.getElementById('detail');const m=mk(S.mkt);
+  if(!m){el.innerHTML='<section class="panel"><p>Maak links een stelling aan om te beginnen.</p></section>';return;}
+  if(UI.outcome>=m.outcomes.length)UI.outcome=0;
+  const n=m.outcomes.length;
+  const pr=m.status==='resolved'?m.outcomes.map((_,i)=>i===m.winner?1:0):P(m.q,m.b);
+  const trades=m.history.length-1;
+  const st={open:['open','Open'],resolved:['resolved','Uitbetaald'],cancelled:['cancelled','Geannuleerd']}[m.status];
+  el.innerHTML=`
+  <section class="panel mhead">
+    <div class="mtop"><span class="pill ${st[0]}">${st[1]}</span><span class="meta">b = ${F0.format(m.b)} · ${trades} transacties · max. verlies pot ${pts(m.b*Math.log(n))} pnt</span></div>
+    <h2>${esc(m.title)}</h2>
+    <div class="probs">${m.outcomes.map((o,i)=>`<div class="prow"><span class="oname"><i class="dot" style="background:${COLORS[i]}"></i>${esc(o)}${m.winner===i?' <span class="win">✓ uitkomst</span>':''}</span><span class="big">${pct(pr[i])}</span><div class="bar"><span style="width:${(pr[i]*100).toFixed(2)}%;background:${COLORS[i]}"></span></div></div>`).join('')}</div>
+    <figure class="chart">${chart(m)}<figcaption>Kans per uitkomst na elke transactie</figcaption></figure>
+  </section>
+  ${m.status==='open'?ticketHTML(m,pr):''}
+  <div class="two">${myPosHTML(m,pr)}${adminHTML(m)}</div>
+  ${mathHTML(m)}
+  ${allPosHTML(m,pr)}`;
+  if(m.status==='open')updateQuote();
+}
+
+function ticketHTML(m,pr){
+  const p=pl(S.active);
+  const lbl=UI.mode==='shares'?'Aantal aandelen':UI.side==='buy'?'Punten die je wilt besteden':'Punten die je wilt ontvangen';
+  return `<section class="panel ticket">
+    <p class="label" style="margin:0">Handelen als ${esc(p.name)}</p>
+    <div class="seg">${m.outcomes.map((o,i)=>`<button type="button" data-act="outcome" data-i="${i}" aria-pressed="${UI.outcome===i}" style="--c:${COLORS[i]}"><span>${esc(o)}</span><span class="mono">${F2.format(pr[i])} pnt</span></button>`).join('')}</div>
+    <div class="row">
+      <div class="seg sm" role="group" aria-label="Kopen of verkopen"><button type="button" data-act="side" data-v="buy" aria-pressed="${UI.side==='buy'}">Kopen</button><button type="button" data-act="side" data-v="sell" aria-pressed="${UI.side==='sell'}">Verkopen</button></div>
+      <div class="seg sm" role="group" aria-label="Invoer in"><button type="button" data-act="mode" data-v="shares" aria-pressed="${UI.mode==='shares'}">In aandelen</button><button type="button" data-act="mode" data-v="points" aria-pressed="${UI.mode==='points'}">In punten</button></div>
+    </div>
+    <div class="amtrow">
+      <label for="amt">${lbl}</label>
+      <input id="amt" type="number" min="0" step="any" inputmode="decimal" value="${UI.amt}">
+      <div class="quick">${[10,50,100].map(v=>`<button type="button" class="btn sm" data-act="quick" data-v="${v}">${v}</button>`).join('')}<button type="button" class="btn sm" data-act="quick" data-v="max">Max</button></div>
+    </div>
+    <dl class="quote" id="quote"></dl>
+    <button type="button" class="btn primary go" data-act="go" id="go">Uitvoeren</button>
+    <p class="msg ${UI.flash?(UI.flash.ok?'ok':'err'):''}" id="msg">${UI.flash?esc(UI.flash.text):''}</p>
+  </section>`;
+}
+
+function quote(){
+  const m=mk(S.mkt),p=pl(S.active),i=UI.outcome,a=Number(UI.amt),o=m.outcomes[i];
+  const held=pos(m.id,p.id).shares[i];
+  if(!(a>0))return {err:'Vul een bedrag groter dan 0 in.'};
+  let d,c;
+  if(UI.side==='buy'){
+    if(UI.mode==='shares'){d=a;c=tcost(m,i,d);}else{c=a;d=sharesForBudget(m,i,a);}
+    if(c>p.balance+1e-9)return {err:`Te weinig punten: dit kost ${pts(c)} en je hebt ${pts(p.balance)}.`};
+  }else{
+    if(held<=1e-9)return {err:`Je hebt geen aandelen ${o} om te verkopen.`};
+    if(UI.mode==='shares'){if(a>held+1e-9)return {err:`Je hebt maar ${F2.format(held)} aandelen ${o}.`};d=-a;c=tcost(m,i,d);}
+    else{const s=sharesForProceeds(m,i,a,held);if(s===null)return {err:`Al je aandelen ${o} samen leveren nu ${pts(-tcost(m,i,-held))} pnt op.`};d=-s;c=-a;}
+  }
+  const q2=m.q.slice();q2[i]+=d;
+  return {d,c,np:P(q2,m.b)[i],p0:P(m.q,m.b)[i],held,o};
+}
+
+function updateQuote(){
+  const el=document.getElementById('quote'),go=document.getElementById('go');if(!el)return;
+  const q=quote();
+  if(q.err){el.innerHTML=`<div class="err">${esc(q.err)}</div>`;go.disabled=true;go.textContent='Uitvoeren';return;}
+  const o=esc(q.o);
+  if(q.d>0){
+    el.innerHTML=`<dt>Aandelen ${o}</dt><dd>${F2.format(q.d)}</dd>
+      <dt>Je betaalt</dt><dd>${pts(q.c)} pnt</dd>
+      <dt>Gemiddelde prijs per aandeel</dt><dd>${F3.format(q.c/q.d)}</dd>
+      <dt>Kans ${o}</dt><dd>${pct(q.p0)} → ${pct(q.np)}</dd>
+      <dt>Uitbetaling als ${o} wint (totaal)</dt><dd>${pts(q.held+q.d)} pnt</dd>
+      <dt>Winst op deze aankoop als ${o} wint</dt><dd class="pos">${sgn(q.d-q.c)} pnt</dd>
+      <dt>Verlies als ${o} niet wint</dt><dd class="neg">−${pts(q.c)} pnt</dd>`;
+    go.textContent=`Koop ${F2.format(q.d)} × ${q.o} voor ${pts(q.c)} pnt`;
+  }else{
+    el.innerHTML=`<dt>Je verkoopt</dt><dd>${F2.format(-q.d)} aandelen ${o}</dd>
+      <dt>Je ontvangt</dt><dd>${pts(-q.c)} pnt</dd>
+      <dt>Gemiddelde prijs per aandeel</dt><dd>${F3.format(q.c/q.d)}</dd>
+      <dt>Kans ${o}</dt><dd>${pct(q.p0)} → ${pct(q.np)}</dd>
+      <dt>Aandelen ${o} over</dt><dd>${F2.format(q.held+q.d)}</dd>`;
+    go.textContent=`Verkoop ${F2.format(-q.d)} × ${q.o} voor ${pts(-q.c)} pnt`;
+  }
+  go.disabled=false;
+}
+
+function myPosHTML(m,pr){
+  const p=pl(S.active),ps=pos(m.id,p.id);
+  let rows=m.outcomes.map((o,i)=>`<tr><td><i class="dot" style="background:${COLORS[i]}"></i> ${esc(o)}</td><td class="r">${F2.format(ps.shares[i])}</td><td class="r">${m.status==='open'?pts(ps.shares[i]*pr[i]):'—'}</td></tr>`).join('');
+  let foot;
+  if(m.status==='resolved'){const pay=(m.payouts&&m.payouts[p.id])||0;const res=pay-ps.spent;
+    foot=`<p class="hint">Netto ingelegd ${pts(ps.spent)} pnt · uitbetaald ${pts(pay)} pnt · resultaat <b class="${res>=0?'pos':'neg'}">${sgn(res)} pnt</b></p>`;}
+  else if(m.status==='cancelled')foot=`<p class="hint">Je netto inleg van ${pts(ps.spent)} pnt is teruggestort.</p>`;
+  else{const val=ps.shares.reduce((s,v,i)=>s+v*pr[i],0);
+    foot=`<p class="hint">Netto ingelegd ${pts(ps.spent)} pnt · waarde nu ${pts(val)} pnt. Elk aandeel betaalt 1 punt als die uitkomst wint.</p>`;}
+  return `<section class="panel"><p class="label">Positie van ${esc(p.name)}</p>
+    <div class="tw"><table class="tbl"><thead><tr><th>Uitkomst</th><th class="r">Aandelen</th><th class="r">Waarde nu</th></tr></thead><tbody>${rows}</tbody></table></div>${foot}</section>`;
+}
+
+function adminHTML(m){
+  if(m.status==='resolved'){
+    const list=Object.entries(m.payouts||{}).map(([pid,a])=>`<tr><td>${esc(pl(pid)?.name||'?')}</td><td class="r">${pts(a)} pnt</td></tr>`).join('')||'<tr><td colspan="2">Niemand had aandelen van deze uitkomst.</td></tr>';
+    return `<section class="panel"><p class="label">Afgesloten</p><p style="margin:0 0 8px"><b>${esc(m.outcomes[m.winner])}</b> wint.</p>
+      <div class="tw"><table class="tbl"><thead><tr><th>Uitbetaald aan</th><th class="r">Punten</th></tr></thead><tbody>${list}</tbody></table></div>
+      <p class="hint">Netto ingelegd ${pts(m.collected)} pnt, uitbetaald ${pts(m.q[m.winner])} pnt. Resultaat van de pot: <b class="${m.house>=0?'pos':'neg'}">${sgn(m.house)} pnt</b>.</p></section>`;
+  }
+  if(m.status==='cancelled')return `<section class="panel"><p class="label">Geannuleerd</p><p class="hint" style="margin:0">Iedereen heeft zijn netto inleg teruggekregen.</p></section>`;
+  let body;
+  if(UI.pending===null){
+    body=`<div class="stackbtns">${m.outcomes.map((o,i)=>`<button type="button" class="btn sm" data-act="pick" data-i="${i}">${esc(o)} wint</button>`).join('')}<button type="button" class="btn sm danger" data-act="pick" data-i="void">Annuleren</button></div>`;
+  }else{
+    const txt=UI.pending==='void'?'De markt wordt geannuleerd en iedereen krijgt zijn netto inleg terug.':`<b>${esc(m.outcomes[UI.pending])}</b> wint. Elk aandeel ${esc(m.outcomes[UI.pending])} betaalt 1 punt uit, de rest wordt 0.`;
+    body=`<div class="confirm">${txt}<div class="stackbtns"><button type="button" class="btn primary sm" data-act="confirm">Bevestigen</button><button type="button" class="btn sm" data-act="unpick">Terug</button></div></div>`;
+  }
+  return `<section class="panel"><p class="label">Uitkomst vaststellen</p><p class="hint" style="margin:0">In de echte app doet alleen een beheerder dit, op basis van een vooraf afgesproken bron.</p>${body}</section>`;
+}
+
+function mathHTML(m){
+  const n=m.outcomes.length,c0=C(m.q.map(()=>0),m.b),cq=C(m.q,m.b),coll=cq-c0;
+  const rows=m.outcomes.map((o,i)=>{const r=coll-m.q[i];return `<tr><td>${esc(o)}</td><td class="r">${pts(m.q[i])}</td><td class="r ${r>=0?'pos':'neg'}">${sgn(r)}</td></tr>`;}).join('');
+  return `<details class="panel math" open><summary>Zo rekent LMSR deze markt</summary>
+    <div class="eq">C(q) = b · ln( Σ e<sup>q<sub>i</sub>/b</sup> ) &nbsp;&nbsp; p<sub>i</sub> = e<sup>q<sub>i</sub>/b</sup> / Σ e<sup>q<sub>j</sub>/b</sup></div>
+    <dl class="kv">
+      <dt>Liquiditeit b</dt><dd>${F0.format(m.b)}</dd>
+      <dt>Uitstaande aandelen q</dt><dd>[${m.q.map(v=>F1.format(v)).join(' ; ')}]</dd>
+      <dt>C(q) nu</dt><dd>${F2.format(cq)}</dd>
+      <dt>C(0) bij de start = b · ln(${n})</dt><dd>${F2.format(c0)}</dd>
+      <dt>Netto ingelegd door spelers = C(q) − C(0)</dt><dd>${F2.format(coll)}</dd>
+    </dl>
+    <p>Een aankoop van Δ aandelen kost C(q + Δ) − C(q). Verkopen werkt andersom: je krijgt C(q) − C(q − Δ) terug. Hoe meer aandelen van een uitkomst er zijn, hoe duurder het volgende aandeel en hoe hoger de kans.</p>
+    <div class="tw"><table class="tbl"><thead><tr><th>Als dit wint</th><th class="r">Pot betaalt uit</th><th class="r">Resultaat pot</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="hint">De pot verliest nooit meer dan b · ln(n) = ${pts(m.b*Math.log(n))} punten, hoe er ook gehandeld wordt. Een grotere b laat de kans trager bewegen, maar vergroot dat maximale verlies.</p>
+  </details>`;
+}
+
+function allPosHTML(m,pr){
+  const ent=Object.entries(S.pos[m.id]||{}).filter(([,ps])=>ps.shares.some(v=>v>1e-9)||Math.abs(ps.spent)>1e-9);
+  if(!ent.length)return '';
+  return `<section class="panel"><p class="label">Alle posities in deze markt</p><div class="tw"><table class="tbl"><thead><tr><th>Speler</th>${m.outcomes.map(o=>`<th class="r">${esc(o)}</th>`).join('')}<th class="r">Netto inleg</th></tr></thead><tbody>
+    ${ent.map(([pid,ps])=>`<tr><td>${esc(pl(pid)?.name||'?')}</td>${ps.shares.map(v=>`<td class="r">${F2.format(v)}</td>`).join('')}<td class="r">${pts(ps.spent)}</td></tr>`).join('')}
+  </tbody></table></div></section>`;
+}
+
+function portfolio(pid){
+  let v=0;for(const m of S.markets){if(m.status!=='open')continue;const ps=S.pos[m.id]?.[pid];if(!ps)continue;const pr=P(m.q,m.b);ps.shares.forEach((s,i)=>v+=s*pr[i]);}
+  return v;
+}
+function renderSide(){
+  const rows=S.players.map(p=>({p,pv:portfolio(p.id)})).map(r=>({...r,tot:r.p.balance+r.pv})).sort((a,b)=>b.tot-a.tot);
+  document.getElementById('lb').innerHTML=`<thead><tr><th></th><th>Speler</th><th class="r">Op zak</th><th class="r">Totaal</th></tr></thead><tbody>`+
+    rows.map((r,i)=>{const d=r.tot-START;return `<tr class="${r.p.id===S.active?'me':''}" data-act="player" data-id="${r.p.id}"><td class="rank">${i+1}</td><td>${esc(r.p.name)}</td><td class="r">${pts(r.p.balance)}</td><td class="r">${pts(r.tot)}<br><span class="${d>=0?'pos':'neg'}" style="font-size:.78rem">${sgn(d)}</span></td></tr>`;}).join('')+'</tbody>';
+  const items=S.log.slice(-30).reverse().map(l=>{
+    const m=mk(l.mid);if(!m)return '';const t=esc(m.title);
+    if(l.type==='trade'){const n=esc(pl(l.pid)?.name||'?');
+      return `<li style="border-color:${COLORS[l.i]}">${n} ${l.d>0?'kocht':'verkocht'} ${F2.format(Math.abs(l.d))} × ${esc(m.outcomes[l.i])} ${l.d>0?'voor':'en kreeg'} ${pts(Math.abs(l.c))} pnt<div class="lm">kans ${pct(l.p0)} → ${pct(l.p1)} · ${t}</div></li>`;}
+    if(l.type==='resolve')return `<li style="border-color:var(--accent)">Afgesloten: ${esc(m.outcomes[l.w])} wint<div class="lm">${t}</div></li>`;
+    return `<li>Geannuleerd<div class="lm">${t}</div></li>`;
+  }).join('');
+  document.getElementById('log').innerHTML=items||'<li>Nog geen transacties.</li>';
+}
+
+function newHint(){
+  const b=Number(document.getElementById('nm-b').value)||0;
+  const outs=document.getElementById('nm-out').value.split(/\n|,/).map(s=>s.trim()).filter(Boolean);
+  const n=Math.max(2,outs.length);const h=document.getElementById('nm-hint');
+  if(b<10){h.textContent='Kies een b van minimaal 10.';return;}
+  const t={b,q:Array(n).fill(0)};const c=tcost(t,0,100);t.q[0]=100;
+  h.textContent=`De pot verliest maximaal ${pts(b*Math.log(n))} pnt. 100 aandelen ${outs[0]||'van uitkomst 1'} kopen kost bij de start ${pts(c)} pnt en zet de kans van ${pct(1/n)} op ${pct(P(t.q,b)[0])}.`;
+}
+
+/* ---------- interactie ---------- */
+let resetArmed=null;
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-act]');if(!t)return;const a=t.dataset.act;
+  if(a==='market'){S.mkt=t.dataset.id;UI.outcome=0;UI.pending=null;UI.flash=null;render();}
+  else if(a==='outcome'){UI.outcome=Number(t.dataset.i);UI.flash=null;renderDetail();}
+  else if(a==='side'){UI.side=t.dataset.v;UI.flash=null;renderDetail();}
+  else if(a==='mode'){UI.mode=t.dataset.v;UI.flash=null;renderDetail();}
+  else if(a==='quick'){
+    if(t.dataset.v==='max'){const m=mk(S.mkt),p=pl(S.active),i=UI.outcome,held=pos(m.id,p.id).shares[i];
+      if(UI.side==='buy')UI.amt=UI.mode==='points'?Math.floor(p.balance*100)/100:Math.floor(sharesForBudget(m,i,p.balance)*100)/100;
+      else UI.amt=UI.mode==='shares'?Math.round(held*100)/100:Math.floor(-tcost(m,i,-held)*100)/100;}
+    else UI.amt=Number(t.dataset.v);
+    document.getElementById('amt').value=UI.amt;UI.flash=null;document.getElementById('msg').textContent='';updateQuote();}
+  else if(a==='go'){
+    const q=quote();if(q.err)return;
+    const r=exec(S.active,S.mkt,UI.outcome,q.d);
+    UI.flash=r.ok?{ok:true,text:`${r.d>0?'Gekocht':'Verkocht'}: ${F2.format(Math.abs(r.d))} × ${mk(S.mkt).outcomes[UI.outcome]} voor ${pts(Math.abs(r.c))} pnt.`}:{ok:false,text:r.msg};
+    render();}
+  else if(a==='pick'){UI.pending=t.dataset.i==='void'?'void':Number(t.dataset.i);renderDetail();}
+  else if(a==='unpick'){UI.pending=null;renderDetail();}
+  else if(a==='confirm'){if(UI.pending==='void')voidM(S.mkt);else resolveM(S.mkt,UI.pending);UI.pending=null;UI.flash=null;render();}
+  else if(a==='player'){S.active=t.dataset.id;UI.flash=null;render();}
+  else if(a==='reset'){
+    if(resetArmed){clearTimeout(resetArmed);resetArmed=null;t.textContent='Demo opnieuw';seed();UI.outcome=0;UI.pending=null;UI.flash=null;render();}
+    else{t.textContent='Zeker? Klik nogmaals';resetArmed=setTimeout(()=>{t.textContent='Demo opnieuw';resetArmed=null;},3000);}
+  }
+});
+document.addEventListener('input',e=>{
+  if(e.target.id==='amt'){UI.amt=e.target.value;UI.flash=null;document.getElementById('msg').textContent='';updateQuote();}
+  if(e.target.id==='nm-b'||e.target.id==='nm-out')newHint();
+});
+document.getElementById('player').addEventListener('change',e=>{S.active=e.target.value;UI.flash=null;render();});
+document.getElementById('newm').addEventListener('submit',e=>{
+  e.preventDefault();const msg=document.getElementById('nm-msg');
+  const title=document.getElementById('nm-title').value.trim();
+  const outs=[...new Set(document.getElementById('nm-out').value.split(/\n|,/).map(s=>s.trim()).filter(Boolean))];
+  const b=Number(document.getElementById('nm-b').value);
+  if(!title){msg.className='msg err';msg.textContent='Vul een stelling in.';return;}
+  if(outs.length<2||outs.length>5){msg.className='msg err';msg.textContent='Geef 2 tot 5 verschillende uitkomsten op.';return;}
+  if(!(b>=10)){msg.className='msg err';msg.textContent='Kies een b van minimaal 10.';return;}
+  const m=newMarket(title,outs,b);S.markets.push(m);S.mkt=m.id;UI.outcome=0;UI.pending=null;UI.flash=null;
+  document.getElementById('nm-title').value='';msg.className='msg ok';msg.textContent='Stelling geopend.';render();
+});
+document.getElementById('newp').addEventListener('submit',e=>{
+  e.preventDefault();const inp=document.getElementById('np-name');const n=inp.value.trim();if(!n)return;
+  const p={id:uid(),name:n,balance:START};S.players.push(p);S.active=p.id;inp.value='';render();
+});
+
+load();newHint();render();
+</script>

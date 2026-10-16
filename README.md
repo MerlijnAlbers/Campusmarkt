@@ -1,0 +1,135 @@
+# Campusmarkt
+
+Een voorspellingsmarkt (zoals Polymarket/Kalshi) voor studenten, met **speelpunten zonder geldwaarde**.
+Gebouwd met Next.js (App Router), TypeScript, Tailwind CSS en Supabase (Postgres, Auth, Realtime).
+
+## Vereisten
+
+- [Node.js](https://nodejs.org) 20+ en npm
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (nodig om Supabase lokaal te draaien)
+  - Op Windows heeft Docker Desktop **WSL2** nodig. Als dat nog niet aanwezig is: open PowerShell
+    **als Administrator** en voer uit `wsl --install`, herstart daarna je pc, en start Docker Desktop
+    eenmaal op om de licentievoorwaarden te accepteren.
+- De [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started)
+
+## Lokaal starten
+
+1. Installeer de dependencies:
+
+   ```bash
+   npm install
+   ```
+
+2. Start de lokale Supabase-stack (Postgres, Auth, Studio, Inbucket e-mailtester). Dit vereist
+   Docker:
+
+   ```bash
+   supabase start
+   ```
+
+   Dit draait automatisch de migraties in `supabase/migrations/` en de testdata in
+   `supabase/seed.sql`. De terminal toont daarna een `API URL` en `anon key`.
+
+3. Kopieer `.env.example` naar `.env.local` en vul de waarden uit stap 2 in:
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key uit `supabase start`>
+   ```
+
+4. Start de Next.js-ontwikkelserver:
+
+   ```bash
+   npm run dev
+   ```
+
+   Open [http://localhost:3000](http://localhost:3000).
+
+5. Inloggen lokaal: vul op `/login` een e-mailadres van het schooldomein (`@my.nyenrode.nl`) in en
+   klik op "Stuur inloglink". Open **Inbucket** (de lokale e-mailtester) op
+   [http://127.0.0.1:54324](http://127.0.0.1:54324) om de inloglink te bekijken en te openen.
+
+6. Supabase Studio (databasebeheer in de browser) staat op
+   [http://127.0.0.1:54323](http://127.0.0.1:54323).
+
+Database resetten (migraties + seed opnieuw draaien):
+
+```bash
+supabase db reset
+```
+
+## Tests
+
+```bash
+npm test          # Vitest (lib/lmsr.ts e.d.)
+supabase test db  # pgTAP-databasetests in supabase/tests/
+```
+
+## Inloggen met schoolaccount (Microsoft Entra ID / Azure AD)
+
+De app is voorbereid op inloggen via het Microsoft-schoolaccount van de student, met de
+e-mail-inloglink als terugvaloptie (voor lokaal testen en als ICT Azure niet toestaat). Om de
+Azure-provider daadwerkelijk te activeren:
+
+### In Azure (Microsoft Entra ID)
+
+1. Ga naar [Microsoft Entra admin center](https://entra.microsoft.com) → **App registrations** →
+   **New registration**.
+2. Geef de app een naam (bijv. "Campusmarkt"), kies het juiste tenant-type (meestal "Accounts in
+   this organizational directory only").
+3. Zet onder **Redirect URI** (type: Web):
+   - Lokaal: `http://127.0.0.1:54321/auth/v1/callback`
+   - Cloud: `https://<jouw-project-ref>.supabase.co/auth/v1/callback`
+4. Noteer de **Application (client) ID** en de **Directory (tenant) ID**.
+5. Ga naar **Certificates & secrets** → **New client secret**, en noteer de gegenereerde waarde
+   (dit is je `client secret`, niet de secret-ID).
+6. Ga naar **API permissions** en zorg dat minimaal `openid`, `email` en `profile` zijn toegestaan.
+
+### In Supabase
+
+**Lokaal** (`supabase/config.toml`, sectie `[auth.external.azure]`):
+
+```toml
+[auth.external.azure]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_AZURE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_AZURE_SECRET)"
+url = "env(SUPABASE_AUTH_EXTERNAL_AZURE_URL)"
+```
+
+Zet de bijbehorende omgevingsvariabelen (niet in git!) voor je shell of in `supabase/.env`:
+
+```bash
+export SUPABASE_AUTH_EXTERNAL_AZURE_CLIENT_ID="<application client id>"
+export SUPABASE_AUTH_EXTERNAL_AZURE_SECRET="<client secret>"
+export SUPABASE_AUTH_EXTERNAL_AZURE_URL="https://login.microsoftonline.com/<tenant-id>/v2.0"
+```
+
+Herstart daarna `supabase start`.
+
+**Cloud** (Supabase dashboard): ga naar **Authentication → Providers → Azure**, vul de Client ID,
+Client Secret en de tenant-URL in, en zet de provider aan. Zet onder **Authentication → URL
+Configuration** de **Redirect URLs** op jouw productie-domein plus `/auth/callback`.
+
+## Schooldomein
+
+Alleen e-mailadressen van `@my.nyenrode.nl` kunnen een account aanmaken; dit wordt afgedwongen in de
+database (`allowed_email_domain()` in `supabase/migrations/0001_init.sql`), niet alleen in de
+client.
+
+## Belangrijke regels (zie ook de bouwprompt)
+
+- Speelpunten hebben geen geldwaarde en zijn nooit inwisselbaar voor geld.
+- Saldo's, posities, trades en het grootboek wijzigen uitsluitend via `security definer`
+  databasefuncties; de client schrijft nooit rechtstreeks in die tabellen (Row Level Security staat
+  overal aan).
+- De `service_role`-sleutel van Supabase wordt nergens in deze app gebruikt en staat niet in
+  `.env.example`.
+
+## Uitrol (vanaf Fase 5)
+
+Instructies voor Vercel en een Supabase-cloudproject volgen in een latere fase.

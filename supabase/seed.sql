@@ -1,0 +1,1 @@
+-- Seedgegevens (testaccounts en voorbeeldmarkten) worden toegevoegd in Fase 2.
