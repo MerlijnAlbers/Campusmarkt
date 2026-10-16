@@ -43,3 +43,15 @@ export function formatDate(value: string | Date): string {
 export function formatDateTime(value: string | Date): string {
   return dateTimeFormatter.format(new Date(value));
 }
+
+/** "Nu" / "2 min geleden" / "3 u geleden" / "5 d geleden". */
+export function formatRelativeTime(value: string | Date, now: Date = new Date()): string {
+  const diffSec = Math.max(0, Math.round((now.getTime() - new Date(value).getTime()) / 1000));
+  if (diffSec < 60) return "Nu";
+  const diffMin = Math.round(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} min geleden`;
+  const diffHour = Math.round(diffMin / 60);
+  if (diffHour < 24) return `${diffHour} u geleden`;
+  const diffDay = Math.round(diffHour / 24);
+  return `${diffDay} d geleden`;
+}

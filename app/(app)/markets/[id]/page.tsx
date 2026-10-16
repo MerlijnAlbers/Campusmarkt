@@ -2,6 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { formatDateTime, formatPointsShort } from "@/lib/format";
 import { STATUS_LABELS } from "@/lib/constants";
 import { MarketLive } from "@/components/MarketLive";
+import { ActivityFeed } from "@/components/ActivityFeed";
+import { mapTradeRow } from "@/lib/activity";
+
+const RECENT_TRADES_LIMIT = 10;
 
 export default async function MarketPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -10,13 +14,14 @@ export default async function MarketPage({ params }: { params: Promise<{ id: str
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [{ data: profile }, { data: market }, { data: outcomes }, { data: positions }, { data: history }] =
+  const [{ data: profile }, { data: market }, { data: outcomes }, { data: positions }, { data: history }, { data: recentTrades }] =
     await Promise.all([
       supabase.from("profiles").select("display_name, balance").eq("id", user.id).single(),
       supabase.from("markets").select("*").eq("id", id).maybeSingle(),
       supabase.from("outcomes").select("*").eq("market_id", id).order("sort_order"),
       supabase.from("positions").select("*").eq("market_id", id),
       supabase.rpc("get_price_history", { p_market: id }),
+      supabase.rpc("get_public_trades", { p_market: id, p_limit: RECENT_TRADES_LIMIT }),
     ]);
 
   if (!market || !outcomes || outcomes.length === 0) {
@@ -88,6 +93,24 @@ export default async function MarketPage({ params }: { params: Promise<{ id: str
         heldShares={heldShares}
         netSpent={netSpent}
       />
+
+      <section>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+          Laatste transacties
+        </p>
+        <ActivityFeed
+          initialRows={(recentTrades ?? []).map(mapTradeRow)}
+          initialHasMore={false}
+          initialSummary={null}
+          filters={{ marketId: market.id, outcomeId: null, side: null, onlyMine: false }}
+          marketOptions={[]}
+          showFilterBar={false}
+          showExport={false}
+          showLoadMore={false}
+          moreHref={`/activity?market=${market.id}`}
+          pageSize={RECENT_TRADES_LIMIT}
+        />
+      </section>
     </div>
   );
 }
