@@ -13,3 +13,12 @@ export const STATUS_LABELS: Record<string, string> = {
   resolved: "Uitbetaald",
   cancelled: "Geannuleerd",
 };
+
+export const LEDGER_KIND_LABELS: Record<string, string> = {
+  grant: "Startpunten",
+  topup: "Wekelijkse aanvulling",
+  trade: "Handel",
+  payout: "Uitbetaling",
+  refund: "Terugstorting",
+  adjustment: "Aanpassing",
+};

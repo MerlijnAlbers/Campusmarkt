@@ -440,6 +440,7 @@ export type Database = {
         };
         Returns: string;
       };
+      delete_market: { Args: { p_market: string }; Returns: undefined };
       get_leaderboard: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -447,6 +448,14 @@ export type Database = {
           display_name: string;
           open_value: number;
           total: number;
+          user_id: string;
+        }[];
+      };
+      get_leaderboard_this_month: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          amount: number;
+          display_name: string;
           user_id: string;
         }[];
       };
@@ -481,6 +490,7 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      primary_admin_email: { Args: Record<PropertyKey, never>; Returns: string };
       resolve_market: { Args: { p_market: string; p_winner: string }; Returns: undefined };
       run_weekly_topup_if_due: { Args: Record<PropertyKey, never>; Returns: undefined };
       set_market_status: {

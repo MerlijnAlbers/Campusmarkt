@@ -69,6 +69,20 @@ npm test          # Vitest (lib/lmsr.ts e.d.)
 supabase test db  # pgTAP-databasetests in supabase/tests/
 ```
 
+## Beheerdersaccount
+
+Het e-mailadres `m.albers@my.nyenrode.nl` krijgt automatisch de rol `admin` zodra het voor het
+eerst inlogt (lokaal via de inloglink, of straks via het schoolaccount) — zie
+`primary_admin_email()` in `supabase/migrations/0005_primary_admin_and_delete_market.sql`. Er is
+daarnaast een los testaccount `admin@my.nyenrode.nl` (wachtwoord `campusmarkt-test`) voor lokaal
+testen zonder je eigen adres te gebruiken.
+
+Een beheerder kan markten aanmaken, openen/sluiten, uitbetalen, annuleren en uitsluitingen
+beheren. **Verwijderen** kan alleen zolang een markt nog geen activiteit heeft (geen trades of
+grootboekregels) — zodra er is gehandeld, moet je annuleren (`cancel_market`) zodat de inleg netjes
+wordt teruggestort en het grootboek klopt. Dit is bewust net als bij Polymarket/Kalshi: een markt
+met echte activiteit verdwijnt nooit stilletjes.
+
 ## Inloggen met schoolaccount (Microsoft Entra ID / Azure AD)
 
 De app is voorbereid op inloggen via het Microsoft-schoolaccount van de student, met de

@@ -1,8 +1,22 @@
-export default function ProfilePage() {
+import { createClient } from "@/lib/supabase/server";
+import { DisplayNameForm } from "@/components/DisplayNameForm";
+
+export default async function ProfilePage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name, email")
+    .eq("id", user.id)
+    .single();
+
   return (
-    <section>
+    <section className="flex flex-col gap-4">
       <h1 className="font-display text-2xl font-bold text-ink">Profiel</h1>
-      <p className="mt-2 text-muted">Hier kun je binnenkort je bijnaam wijzigen.</p>
+      <p className="text-sm text-muted">Schoolmail: {profile?.email}</p>
+      <DisplayNameForm userId={user.id} initialName={profile?.display_name ?? ""} />
     </section>
   );
 }

@@ -13,7 +13,8 @@ export default function LoginPage() {
 
   async function handleMagicLink(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.toLowerCase().endsWith(`@${SCHOOL_DOMAIN}`)) {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail.toLowerCase().endsWith(`@${SCHOOL_DOMAIN}`)) {
       setStatus("error");
       setMessage(`Gebruik je schoolaccount (@${SCHOOL_DOMAIN}).`);
       return;
@@ -23,7 +24,7 @@ export default function LoginPage() {
     setMessage("");
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOtp({
-      email,
+      email: trimmedEmail,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -40,7 +41,7 @@ export default function LoginPage() {
     }
 
     setStatus("sent");
-    setMessage("Check je mail: we hebben een inloglink gestuurd.");
+    setMessage(`Check je mail: we hebben een inloglink gestuurd naar ${trimmedEmail}.`);
   }
 
   async function handleAzureLogin() {
