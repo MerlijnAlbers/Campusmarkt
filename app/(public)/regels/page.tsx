@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { METRIC_DESCRIPTIONS } from "@/lib/constants";
 
 export default function RulesPage() {
   return (
@@ -46,6 +47,42 @@ export default function RulesPage() {
           Een markt kan ook geannuleerd worden als de vraag niet meer te beantwoorden is (bijv. een
           evenement gaat niet door). Dan krijgt iedereen zijn netto inleg in die markt terug.
         </p>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="font-display text-lg font-semibold">Wat betekenen de cijfers?</h2>
+        <p>
+          Op elke markttegel en in het logboek zie je een paar kerncijfers. Dit betekenen ze:
+        </p>
+        <dl className="flex flex-col gap-3">
+          <div>
+            <dt className="font-medium">Marktwaarde</dt>
+            <dd className="text-muted">{METRIC_DESCRIPTIONS.marktwaarde}</dd>
+          </div>
+          <div>
+            <dt className="font-medium">Pot</dt>
+            <dd className="text-muted">{METRIC_DESCRIPTIONS.pot}</dd>
+          </div>
+          <div>
+            <dt className="font-medium">Volume</dt>
+            <dd className="text-muted">{METRIC_DESCRIPTIONS.volume}</dd>
+          </div>
+          <div>
+            <dt className="font-medium">Handelaren</dt>
+            <dd className="text-muted">{METRIC_DESCRIPTIONS.handelaren}</dd>
+          </div>
+          <div>
+            <dt className="font-medium">Houders</dt>
+            <dd className="text-muted">{METRIC_DESCRIPTIONS.houders}</dd>
+          </div>
+          <div>
+            <dt className="font-medium">Verandering 24u</dt>
+            <dd className="text-muted">
+              Het verschil in kans (in procentpunten) met 24 uur geleden. Een pijl omhoog (▲, groen)
+              betekent dat de kans is gestegen, omlaag (▼, rood) dat hij is gedaald.
+            </dd>
+          </div>
+        </dl>
       </section>
 
       <p className="text-sm text-muted">

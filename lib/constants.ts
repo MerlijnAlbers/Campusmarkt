@@ -22,3 +22,11 @@ export const LEDGER_KIND_LABELS: Record<string, string> = {
   refund: "Terugstorting",
   adjustment: "Aanpassing",
 };
+
+export const METRIC_DESCRIPTIONS: Record<string, string> = {
+  marktwaarde: "Waarde van alle uitstaande aandelen tegen de huidige kans.",
+  volume: "Totaal verhandelde punten, kopen en verkopen samen.",
+  handelaren: "Unieke studenten met minstens één transactie in deze markt.",
+  houders: "Studenten die nu aandelen van een uitkomst bezitten.",
+  pot: "Netto door spelers ingelegd (wat de pot bij uitbetalen verliest of overhoudt).",
+};
