@@ -4,27 +4,25 @@ import { useState } from "react";
 import { formatPointsShort } from "@/lib/format";
 
 export interface TotalRow {
-  user_id: string;
-  display_name: string;
+  isMe: boolean;
+  displayName: string;
   balance: number;
-  open_value: number;
+  openValue: number;
   total: number;
 }
 
 export interface MonthRow {
-  user_id: string;
-  display_name: string;
+  isMe: boolean;
+  displayName: string;
   amount: number;
 }
 
 export function LeaderboardTabs({
   totalRows,
   monthRows,
-  currentUserId,
 }: {
   totalRows: TotalRow[];
   monthRows: MonthRow[];
-  currentUserId: string;
 }) {
   const [tab, setTab] = useState<"total" | "month">("total");
 
@@ -65,13 +63,16 @@ export function LeaderboardTabs({
             <tbody>
               {totalRows.map((r, i) => (
                 <tr
-                  key={r.user_id}
+                  key={i}
                   className={`border-b border-line last:border-none ${
-                    r.user_id === currentUserId ? "font-semibold" : ""
+                    r.isMe ? "font-semibold" : ""
                   }`}
                 >
                   <td className="py-1.5 pr-2 font-mono text-muted">{i + 1}</td>
-                  <td className="py-1.5 pr-2">{r.display_name}</td>
+                  <td className="py-1.5 pr-2">
+                    {r.displayName}
+                    {r.isMe && <span className="ml-1 text-xs text-muted">(jij)</span>}
+                  </td>
                   <td className="py-1.5 pr-2 text-right font-mono">
                     {formatPointsShort(r.balance)}
                   </td>
@@ -92,13 +93,16 @@ export function LeaderboardTabs({
             <tbody>
               {monthRows.map((r, i) => (
                 <tr
-                  key={r.user_id}
+                  key={i}
                   className={`border-b border-line last:border-none ${
-                    r.user_id === currentUserId ? "font-semibold" : ""
+                    r.isMe ? "font-semibold" : ""
                   }`}
                 >
                   <td className="py-1.5 pr-2 font-mono text-muted">{i + 1}</td>
-                  <td className="py-1.5 pr-2">{r.display_name}</td>
+                  <td className="py-1.5 pr-2">
+                    {r.displayName}
+                    {r.isMe && <span className="ml-1 text-xs text-muted">(jij)</span>}
+                  </td>
                   <td
                     className={`py-1.5 text-right font-mono ${
                       r.amount >= 0 ? "text-good" : "text-bad"

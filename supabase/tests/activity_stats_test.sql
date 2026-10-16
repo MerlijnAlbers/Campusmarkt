@@ -19,15 +19,26 @@ $$;
 create or replace function kv(p_k text) returns text
 language sql security definer as $$ select v from kv where k = p_k $$;
 
-create or replace function test_as(p_email text) returns void
+-- Opzoeken mag RLS omzeilen (security definer); de roluitgifte hieronder mag dat juist niet
+-- zijn, want "set role" is binnen een security-definer-functie niet toegestaan.
+create or replace function test_lookup_id(p_email text) returns uuid
+language sql security definer set search_path = public as $$
+  select id from profiles where email = p_email;
+$$;
+
+create or replace function test_as(p_email text, p_aal text default 'aal1') returns void
 language plpgsql as $$
 declare v_id uuid;
 begin
-  select id into v_id from profiles where email = p_email;
+  v_id := test_lookup_id(p_email);
   if v_id is null then
     raise exception 'onbekend testaccount: %', p_email;
   end if;
-  perform set_config('request.jwt.claims', json_build_object('sub', v_id, 'role', 'authenticated')::text, true);
+  perform set_config(
+    'request.jwt.claims',
+    json_build_object('sub', v_id, 'role', 'authenticated', 'aal', p_aal)::text,
+    true
+  );
   set local role authenticated;
 end $$;
 
@@ -143,11 +154,11 @@ end $$;
 select is(kv('daan_other_name'), 'Anonieme student', 'andere studenten zien Daans trade als "Anonieme student"');
 select is(kv('daan_other_is_me')::boolean, false, 'is_me staat op false voor andermans trade');
 
--- geen e-mailadres of user-id van Daan lekt naar buiten
-select ok(
-  kv('daan_other_name') <> (select email from profiles where email = 'daan@my.nyenrode.nl')
-  and kv('daan_other_name') <> (select id::text from profiles where email = 'daan@my.nyenrode.nl'),
-  'geen e-mailadres of user-id van Daan zichtbaar voor een andere student'
+-- geen e-mailadres of user-id van Daan lekt naar buiten (het logboek toont immers al
+-- "Anonieme student", en de profielen-RLS laat Sanne Daans rij nu sowieso niet meer lezen)
+select is_empty(
+  format('select email, id from profiles where email = %L', 'daan@my.nyenrode.nl'),
+  'een andere student kan Daans e-mailadres of user-id niet rechtstreeks via profiles opvragen'
 );
 
 -- ===== 3. Conceptmarkten zijn nergens zichtbaar voor niet-admins =====

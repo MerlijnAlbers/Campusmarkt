@@ -16,18 +16,17 @@ export default async function LeaderboardPage() {
       <h1 className="font-display text-2xl font-bold text-ink">Klassement</h1>
       <LeaderboardTabs
         totalRows={(totalRows ?? []).map((r) => ({
-          user_id: r.user_id,
-          display_name: r.display_name,
+          isMe: r.is_me,
+          displayName: r.display_name,
           balance: Number(r.balance),
-          open_value: Number(r.open_value),
+          openValue: Number(r.open_value),
           total: Number(r.total),
         }))}
         monthRows={(monthRows ?? []).map((r) => ({
-          user_id: r.user_id,
-          display_name: r.display_name,
+          isMe: r.is_me,
+          displayName: r.display_name,
           amount: Number(r.amount),
         }))}
-        currentUserId={user.id}
       />
     </div>
   );

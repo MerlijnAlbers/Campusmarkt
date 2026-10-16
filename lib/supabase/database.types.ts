@@ -23,6 +23,59 @@ export type Database = {
   };
   public: {
     Tables: {
+      admin_actions: {
+        Row: {
+          action: string;
+          admin_id: string;
+          created_at: string;
+          details: NonNullable<Json>;
+          id: number;
+          market_id: string | null;
+          target_user: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          action: string;
+          admin_id: string;
+          created_at?: string;
+          details?: NonNullable<Json>;
+          id?: never;
+          market_id?: string | null;
+          target_user?: string | null;
+        };
+        Update: {
+          action?: string;
+          admin_id?: string;
+          created_at?: string;
+          details?: NonNullable<Json>;
+          id?: never;
+          market_id?: string | null;
+          target_user?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "admin_actions_admin_id_fkey";
+            columns: ["admin_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "admin_actions_market_id_fkey";
+            columns: ["market_id"];
+            isOneToOne: false;
+            referencedRelation: "markets";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "admin_actions_target_user_fkey";
+            columns: ["target_user"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       ledger_entries: {
         Row: {
           amount: number;
@@ -281,29 +334,35 @@ export type Database = {
       profiles: {
         Row: {
           balance: number;
+          blocked_reason: string | null;
           created_at: string;
           display_name: string;
           email: string;
           id: string;
+          is_blocked: boolean;
           role: Database["public"]["Enums"]["user_role"];
           show_name_in_feed: boolean;
         };
         ComputedFields: never;
         Insert: {
           balance?: number;
+          blocked_reason?: string | null;
           created_at?: string;
           display_name: string;
           email: string;
           id: string;
+          is_blocked?: boolean;
           role?: Database["public"]["Enums"]["user_role"];
           show_name_in_feed?: boolean;
         };
         Update: {
           balance?: number;
+          blocked_reason?: string | null;
           created_at?: string;
           display_name?: string;
           email?: string;
           id?: string;
+          is_blocked?: boolean;
           role?: Database["public"]["Enums"]["user_role"];
           show_name_in_feed?: boolean;
         };
@@ -419,6 +478,48 @@ export type Database = {
       };
     };
     Functions: {
+      admin_add_exclusion: {
+        Args: { p_market: string; p_reason?: string; p_user: string };
+        Returns: undefined;
+      };
+      admin_adjust_points: {
+        Args: { p_amount: number; p_reason: string; p_user: string };
+        Returns: undefined;
+      };
+      admin_list_actions: {
+        Args: { p_limit?: number };
+        Returns: {
+          action: string;
+          admin_id: string;
+          admin_name: string;
+          created_at: string;
+          details: Json;
+          id: number;
+          market_id: string;
+          market_title: string;
+          target_name: string;
+          target_user: string;
+        }[];
+      };
+      admin_list_users: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          balance: number;
+          blocked_reason: string;
+          created_at: string;
+          display_name: string;
+          email: string;
+          is_blocked: boolean;
+          last_trade_at: string;
+          trade_count: number;
+          user_id: string;
+        }[];
+      };
+      admin_remove_exclusion: { Args: { p_market: string; p_user: string }; Returns: undefined };
+      admin_set_blocked: {
+        Args: { p_blocked: boolean; p_reason?: string; p_user: string };
+        Returns: undefined;
+      };
       allowed_email_domain: { Args: Record<PropertyKey, never>; Returns: string };
       cancel_market: { Args: { p_market: string }; Returns: undefined };
       check_ledger: {
@@ -449,9 +550,9 @@ export type Database = {
         Returns: {
           balance: number;
           display_name: string;
+          is_me: boolean;
           open_value: number;
           total: number;
-          user_id: string;
         }[];
       };
       get_leaderboard_this_month: {
@@ -459,7 +560,7 @@ export type Database = {
         Returns: {
           amount: number;
           display_name: string;
-          user_id: string;
+          is_me: boolean;
         }[];
       };
       get_market_stats: {
@@ -517,6 +618,7 @@ export type Database = {
         }[];
       };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
+      is_admin_mfa: { Args: Record<PropertyKey, never>; Returns: boolean };
       lmsr_cost: { Args: { b: number; q: number[] }; Returns: number };
       lmsr_prob: { Args: { b: number; i: number; q: number[] }; Returns: number };
       place_trade: {
@@ -540,7 +642,6 @@ export type Database = {
           isSetofReturn: false;
         };
       };
-      primary_admin_email: { Args: Record<PropertyKey, never>; Returns: string };
       resolve_market: { Args: { p_market: string; p_winner: string }; Returns: undefined };
       run_weekly_topup_if_due: { Args: Record<PropertyKey, never>; Returns: undefined };
       set_market_status: {

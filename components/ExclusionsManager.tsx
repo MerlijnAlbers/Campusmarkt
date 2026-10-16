@@ -40,9 +40,11 @@ export function ExclusionsManager({
     setBusy(true);
     setMessage(null);
     const supabase = createClient();
-    const { error } = await supabase
-      .from("market_exclusions")
-      .insert({ market_id: marketId, user_id: selected, reason: reason.trim() || null });
+    const { error } = await supabase.rpc("admin_add_exclusion", {
+      p_market: marketId,
+      p_user: selected,
+      p_reason: reason.trim() || undefined,
+    });
     setBusy(false);
     if (error) {
       setMessage(error.message);
@@ -56,11 +58,10 @@ export function ExclusionsManager({
     setBusy(true);
     setMessage(null);
     const supabase = createClient();
-    const { error } = await supabase
-      .from("market_exclusions")
-      .delete()
-      .eq("market_id", marketId)
-      .eq("user_id", userId);
+    const { error } = await supabase.rpc("admin_remove_exclusion", {
+      p_market: marketId,
+      p_user: userId,
+    });
     setBusy(false);
     if (error) {
       setMessage(error.message);

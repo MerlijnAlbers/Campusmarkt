@@ -21,15 +21,26 @@ language sql security definer as $$ select v from kv where k = p_k $$;
 
 -- Doet alsof we zijn ingelogd als het testaccount met dit e-mailadres (zet rol + jwt-claim, net
 -- als PostgREST dat voor een echte ingelogde gebruiker zou doen).
-create or replace function test_as(p_email text) returns void
+-- Opzoeken mag RLS omzeilen (security definer); de roluitgifte hieronder mag dat juist niet
+-- zijn, want "set role" is binnen een security-definer-functie niet toegestaan.
+create or replace function test_lookup_id(p_email text) returns uuid
+language sql security definer set search_path = public as $$
+  select id from profiles where email = p_email;
+$$;
+
+create or replace function test_as(p_email text, p_aal text default 'aal1') returns void
 language plpgsql as $$
 declare v_id uuid;
 begin
-  select id into v_id from profiles where email = p_email;
+  v_id := test_lookup_id(p_email);
   if v_id is null then
     raise exception 'onbekend testaccount: %', p_email;
   end if;
-  perform set_config('request.jwt.claims', json_build_object('sub', v_id, 'role', 'authenticated')::text, true);
+  perform set_config(
+    'request.jwt.claims',
+    json_build_object('sub', v_id, 'role', 'authenticated', 'aal', p_aal)::text,
+    true
+  );
   set local role authenticated;
 end $$;
 
@@ -171,7 +182,7 @@ select throws_ok(
 select throws_ok(
   format('select resolve_market(%L, %L)', kv('m_payout'), kv('o_payout_win')),
   'P0001',
-  'Alleen beheerders',
+  'Geen toegang',
   'een niet-admin kan resolve_market niet aanroepen'
 );
 
@@ -186,7 +197,7 @@ begin
   perform kv_set('noor_balance_before_resolve', v_balance::text);
 end $$;
 
-do $$ begin perform test_as('admin@my.nyenrode.nl'); end $$;
+do $$ begin perform test_as('admin@my.nyenrode.nl', 'aal2'); end $$;
 do $$ begin perform resolve_market(kv('m_payout')::uuid, kv('o_payout_win')::uuid); end $$;
 
 select ok(
@@ -216,7 +227,7 @@ begin
   perform kv_set('mehmet_net_spent', v_net_spent::text);
 end $$;
 
-do $$ begin perform test_as('admin@my.nyenrode.nl'); end $$;
+do $$ begin perform test_as('admin@my.nyenrode.nl', 'aal2'); end $$;
 do $$ begin perform cancel_market(kv('m_cancel')::uuid); end $$;
 
 select ok(
@@ -226,7 +237,7 @@ select ok(
 );
 
 -- ===== 10. check_ledger() is leeg na alle scenario's =====
-do $$ begin perform test_as_postgres(); end $$;
+do $$ begin perform test_as('admin@my.nyenrode.nl', 'aal2'); end $$;
 
 select is_empty(
   'select * from check_ledger()',
