@@ -1,26 +1,28 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getViewer } from "@/lib/auth/getViewer";
 import { AppShell } from "@/components/AppShell";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const viewer = await getViewer();
 
-  if (!user) {
+  if (!viewer) {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
+  // Saldo staat niet in getViewer() (die is er puur voor rol/blokkade/MFA); apart ophalen.
+  const supabase = await createClient();
+  const { data: balanceRow } = await supabase
     .from("profiles")
-    .select("display_name, balance, role")
-    .eq("id", user.id)
+    .select("balance")
+    .eq("id", viewer.userId)
     .single();
 
   return (
     <AppShell
-      displayName={profile?.display_name ?? user.email ?? ""}
-      balance={Number(profile?.balance ?? 0)}
-      isAdmin={profile?.role === "admin"}
+      displayName={viewer.displayName}
+      balance={Number(balanceRow?.balance ?? 0)}
+      isAdmin={viewer.role === "admin"}
     >
       {children}
     </AppShell>

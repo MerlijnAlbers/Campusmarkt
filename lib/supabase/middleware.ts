@@ -59,10 +59,24 @@ export async function updateSession(request: NextRequest) {
       .single();
 
     if (profile?.role !== "admin") {
+      // Geen 403/redirect: dat zou verraden dat de route bestaat. Rewrite naar een pad dat
+      // nergens op matcht, zodat de normale not-found.tsx wordt getoond terwijl de URL in de
+      // browser ongewijzigd blijft op /admin/...
       const url = request.nextUrl.clone();
-      url.pathname = "/";
-      url.search = "";
-      return NextResponse.redirect(url);
+      url.pathname = "/__geen_toegang__";
+      return NextResponse.rewrite(url);
+    }
+
+    // /admin/mfa zelf uitzonderen, anders ontstaat een omleidingslus voor een admin die nog
+    // geen aal2 heeft.
+    if (pathname !== "/admin/mfa") {
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal?.currentLevel !== "aal2") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/admin/mfa";
+        url.search = "";
+        return NextResponse.redirect(url);
+      }
     }
   }
 

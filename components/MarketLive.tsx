@@ -26,6 +26,8 @@ export function MarketLive({
   userBalance,
   heldShares,
   netSpent,
+  isBlocked,
+  blockedReason,
 }: {
   marketId: string;
   b: number;
@@ -37,6 +39,8 @@ export function MarketLive({
   userBalance: number;
   heldShares: Record<string, number>;
   netSpent: Record<string, number>;
+  isBlocked: boolean;
+  blockedReason: string | null;
 }) {
   const router = useRouter();
   const [state, setState] = useState<{ outcomes: OutcomeInfo[]; history: PriceChartPoint[] }>({
@@ -95,7 +99,19 @@ export function MarketLive({
         </div>
       </section>
 
-      {status === "open" && (
+      {status === "open" && isBlocked && (
+        <section className="rounded-lg border border-bad bg-surface p-4">
+          <p className="font-semibold text-bad">Je account is geblokkeerd</p>
+          <p className="mt-1 text-sm text-muted">
+            {blockedReason
+              ? `Reden: ${blockedReason}`
+              : "Neem contact op met de beheerder voor meer informatie."}{" "}
+            Je kunt niet handelen, maar wel blijven meekijken.
+          </p>
+        </section>
+      )}
+
+      {status === "open" && !isBlocked && (
         <TradeTicket
           b={b}
           outcomes={state.outcomes}

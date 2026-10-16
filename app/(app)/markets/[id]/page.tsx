@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getViewer } from "@/lib/auth/getViewer";
 import { formatDateTime, formatPointsShort } from "@/lib/format";
 import { STATUS_LABELS } from "@/lib/constants";
 import { MarketLive } from "@/components/MarketLive";
@@ -9,14 +10,13 @@ const RECENT_TRADES_LIMIT = 10;
 
 export default async function MarketPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const viewer = await getViewer();
+  if (!viewer) return null;
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const [{ data: profile }, { data: market }, { data: outcomes }, { data: positions }, { data: history }, { data: recentTrades }] =
+  const [{ data: balanceRow }, { data: market }, { data: outcomes }, { data: positions }, { data: history }, { data: recentTrades }] =
     await Promise.all([
-      supabase.from("profiles").select("display_name, balance").eq("id", user.id).single(),
+      supabase.from("profiles").select("balance").eq("id", viewer.userId).single(),
       supabase.from("markets").select("*").eq("id", id).maybeSingle(),
       supabase.from("outcomes").select("*").eq("market_id", id).order("sort_order"),
       supabase.from("positions").select("*").eq("market_id", id),
@@ -88,10 +88,12 @@ export default async function MarketPage({ params }: { params: Promise<{ id: str
         winningOutcomeId={market.winning_outcome_id}
         initialOutcomes={outcomes.map((o) => ({ id: o.id, label: o.label, q: Number(o.q) }))}
         initialHistory={initialHistory}
-        userName={profile?.display_name ?? user.email ?? ""}
-        userBalance={Number(profile?.balance ?? 0)}
+        userName={viewer.displayName}
+        userBalance={Number(balanceRow?.balance ?? 0)}
         heldShares={heldShares}
         netSpent={netSpent}
+        isBlocked={viewer.isBlocked}
+        blockedReason={viewer.blockedReason}
       />
 
       <section>

@@ -83,6 +83,52 @@ grootboekregels) — zodra er is gehandeld, moet je annuleren (`cancel_market`) 
 wordt teruggestort en het grootboek klopt. Dit is bewust net als bij Polymarket/Kalshi: een markt
 met echte activiteit verdwijnt nooit stilletjes.
 
+## Tweestapsverificatie (MFA) voor beheerders
+
+Elk account met de rol `admin` moet verplicht tweestapsverificatie (TOTP, bijv. Google
+Authenticator, Microsoft Authenticator of 1Password) instellen voordat het bij een van de
+`/admin/*`-schermen kan. Dit wordt op drie plekken afgedwongen:
+
+1. **Middleware** (`lib/supabase/middleware.ts`): stuurt een admin zonder AAL2-sessie (behalve op
+   `/admin/mfa` zelf) door naar `/admin/mfa`.
+2. **`app/(app)/admin/layout.tsx`**: controleert via `requireAdmin()` nogmaals of de rol klopt
+   (404, geen redirect, zodat een niet-admin niet kan afleiden dat het beheer bestaat).
+3. **Database**: elke beheerfunctie begint met `is_admin_mfa()`, die zowel de rol als de AAL2-claim
+   uit het JWT controleert. Zelfs met een gestolen sessie-cookie zonder voltooide MFA-stap kan er
+   dus niets in de database worden aangepast.
+
+### Eenmalig instellen
+
+Log in als beheerder en ga naar `/admin` (of direct naar `/admin/mfa`). Scan de QR-code met een
+authenticator-app en vul de 6-cijferige code in om te bevestigen. Dit hoeft maar één keer per
+account.
+
+### Authenticator kwijt / MFA resetten
+
+Er is bewust **geen** manier in de app zelf om MFA uit te zetten of te resetten (dat zou de
+beveiliging omzeilen). Bij verlies van de authenticator-app kan alleen jij, als projecteigenaar,
+het via het Supabase-dashboard herstellen:
+
+1. Ga naar **Authentication → Users**, zoek het beheerdersaccount op.
+2. Open het account en verwijder onder **Multi-Factor Authentication** de bestaande TOTP-factor.
+3. De beheerder kan daarna opnieuw inloggen en bij `/admin/mfa` een nieuwe authenticator koppelen.
+
+Lokaal kan dit ook direct in Supabase Studio (`http://127.0.0.1:54323`) via dezelfde route, of met
+SQL: `delete from auth.mfa_factors where user_id = '<user-id>';`.
+
+### Bij een vermoedelijk gecompromitteerd beheerdersaccount
+
+1. Verwijder direct de TOTP-factor zoals hierboven (dit dwingt een nieuwe MFA-koppeling af en
+   ongeldigt de huidige AAL2-sessie bij de volgende statuscontrole).
+2. Overweeg het account tijdelijk te blokkeren via `admin_set_blocked` (uitgevoerd door een ander
+   beheerdersaccount, of rechtstreeks in de database) totdat het wachtwoord/toegang tot de mailbox
+   is gecontroleerd.
+3. Controleer `admin_actions` (het auditlog van alle beheerhandelingen) op acties die niet door de
+   rechtmatige beheerder zijn uitgevoerd.
+4. Omdat de rol `admin` uitsluitend via `primary_admin_email()` (zie "Beheerdersaccount" hierboven)
+   of een handmatige SQL-opdracht wordt toegekend — nooit via de app zelf — kan een aanvaller de
+   rol niet zelf opnieuw toekennen nadat deze is ingetrokken.
+
 ## Inloggen met schoolaccount (Microsoft Entra ID / Azure AD)
 
 De app is voorbereid op inloggen via het Microsoft-schoolaccount van de student, met de
@@ -165,10 +211,13 @@ client.
    "Beheerdersaccount" hierboven).
 5. Controleer onder **Database → Extensions** dat `pg_cron` en `pgtap` beschikbaar zijn (bij de
    meeste Supabase-plannen staan ze al aan; `pg_cron` wordt door migratie `0002` ingeschakeld).
-6. Ga naar **Authentication → URL Configuration** en zet de **Site URL** en **Redirect URLs**
-   voorlopig op `http://localhost:3000` en `http://localhost:3000/auth/callback` — dit stel je in
-   stap 3 hieronder bij naar je echte Vercel-domein.
-7. (Optioneel maar aanbevolen voor meer dan een paar inloglinks per uur) stel onder
+6. Ga naar **Authentication → Multi-Factor** en zet **TOTP (Authenticator App)** aan. Zonder deze
+   stap werkt `supabase/config.toml`'s `[auth.mfa.totp]` alleen lokaal — op het cloudproject moet
+   MFA apart in het dashboard worden ingeschakeld, anders kan geen beheerder bij `/admin` komen.
+7. Ga naar **Authentication → URL Configuration** en zet de **Site URL** en **Redirect URLs**
+   voorlopig op `http://localhost:3000` en `http://localhost:3000/auth/callback` — dit stel je later
+   bij naar je echte Vercel-domein.
+8. (Optioneel maar aanbevolen voor meer dan een paar inloglinks per uur) stel onder
    **Authentication → Email → SMTP Settings** een eigen SMTP-provider in (bijv. via de schoolmail
    of een dienst als Resend/Postmark) — de standaard Supabase-mailer is bedoeld voor testen, niet
    voor een hele klas.
