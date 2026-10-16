@@ -54,10 +54,18 @@ export function LeaderboardTabs({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
-                <th className="py-1.5 pr-2 font-semibold"></th>
-                <th className="py-1.5 pr-2 font-semibold">Speler</th>
-                <th className="py-1.5 pr-2 text-right font-semibold">Op zak</th>
-                <th className="py-1.5 text-right font-semibold">Totaal</th>
+                <th scope="col" className="py-1.5 pr-2 font-semibold">
+                  <span className="sr-only">Positie</span>
+                </th>
+                <th scope="col" className="py-1.5 pr-2 font-semibold">
+                  Speler
+                </th>
+                <th scope="col" className="py-1.5 pr-2 text-right font-semibold">
+                  Op zak
+                </th>
+                <th scope="col" className="py-1.5 text-right font-semibold">
+                  Totaal
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -85,9 +93,15 @@ export function LeaderboardTabs({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
-                <th className="py-1.5 pr-2 font-semibold"></th>
-                <th className="py-1.5 pr-2 font-semibold">Speler</th>
-                <th className="py-1.5 text-right font-semibold">Deze maand</th>
+                <th scope="col" className="py-1.5 pr-2 font-semibold">
+                  <span className="sr-only">Positie</span>
+                </th>
+                <th scope="col" className="py-1.5 pr-2 font-semibold">
+                  Speler
+                </th>
+                <th scope="col" className="py-1.5 text-right font-semibold">
+                  Deze maand
+                </th>
               </tr>
             </thead>
             <tbody>

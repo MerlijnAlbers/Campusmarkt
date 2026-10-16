@@ -69,6 +69,36 @@ npm test          # Vitest (lib/lmsr.ts e.d.)
 supabase test db  # pgTAP-databasetests in supabase/tests/
 ```
 
+## Prestaties testen
+
+`supabase/seed_large.sql` vult de lokale database met ~150 extra studenten, 50 markten en zo'n
+5.000 transacties (via de echte RPC's — zie de uitleg in het bestand zelf), om te zien hoe de app
+zich houdt op een schaal die ver boven een pilot uitkomt. Draai dit **na** een normale
+`supabase db reset`, dus niet als onderdeel ervan (anders kost elke gewone reset tijdens
+ontwikkelen tientallen seconden extra):
+
+```bash
+supabase db reset
+docker exec -i supabase_db_campusmarkt psql -U postgres -d postgres -f /dev/stdin < supabase/seed_large.sql
+```
+
+Log daarna in als `admin@my.nyenrode.nl` en controleer:
+
+- `select * from check_ledger()` (via Studio's SQL-editor of een RPC-call) hoort niets terug te
+  geven — als er wel rijen zijn, klopt het grootboek niet meer.
+- De paginas `/`, `/activity`, `/leaderboard`, `/admin/users`, `/admin/log` en `/admin/stats`
+  laden en tonen de juiste aantallen.
+
+Met deze dataset (53 markten, 155 spelers, 5.000 trades) duurt `get_market_stats()` ~150ms in de
+database, en laadt elke pagina in **productiebuild** (`npm run build && npm run start`) binnen
+ongeveer 1-1,3 seconde. Test dit altijd met een productiebuild, niet met `npm run dev` — de
+dev-server compileert routes on-demand en herbouwt bij elke bestandswijziging in de projectmap,
+wat de resultaten vertekent (in dev leek dezelfde pagina soms 3+ seconden te duren, puur door die
+herbouw-overhead, niet door de query's zelf).
+
+Reset de database weer (`supabase db reset`) als je klaar bent met testen — de 150 extra
+testaccounts en 50 testmarkten zijn niet bedoeld om te blijven staan.
+
 ## Beheerdersaccount
 
 Er bestaat precies één beheerdersaccount (afgedwongen met een unieke database-index). Nieuwe

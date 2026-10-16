@@ -245,6 +245,12 @@ export function AppShell({
 
   return (
     <div className="flex min-h-screen flex-col bg-bg lg:flex-row">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-accent focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-accent-ink"
+      >
+        Direct naar inhoud
+      </a>
       {/* Mobiele topbar */}
       <div className="flex items-center justify-between border-b border-line bg-surface px-4 py-3 lg:hidden">
         <button
@@ -388,7 +394,9 @@ export function AppShell({
         </div>
       </div>
 
-      <main className="min-w-0 flex-1 px-4 py-6 sm:px-6">{children}</main>
+      <main id="main-content" className="min-w-0 flex-1 px-4 py-6 sm:px-6">
+        {children}
+      </main>
     </div>
   );
 }

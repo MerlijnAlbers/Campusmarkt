@@ -84,13 +84,13 @@ export function AdminUsersTable({ users }: { users: AdminUserRow[] }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
-              <th className="px-3 py-2 font-semibold">Naam</th>
-              <th className="px-3 py-2 font-semibold">E-mail</th>
-              <th className="px-3 py-2 text-right font-semibold">Saldo</th>
-              <th className="px-3 py-2 text-right font-semibold">Transacties</th>
-              <th className="px-3 py-2 font-semibold">Laatste transactie</th>
-              <th className="px-3 py-2 font-semibold">Status</th>
-              <th className="px-3 py-2 font-semibold">Acties</th>
+              <th scope="col" className="px-3 py-2 font-semibold">Naam</th>
+              <th scope="col" className="px-3 py-2 font-semibold">E-mail</th>
+              <th scope="col" className="px-3 py-2 text-right font-semibold">Saldo</th>
+              <th scope="col" className="px-3 py-2 text-right font-semibold">Transacties</th>
+              <th scope="col" className="px-3 py-2 font-semibold">Laatste transactie</th>
+              <th scope="col" className="px-3 py-2 font-semibold">Status</th>
+              <th scope="col" className="px-3 py-2 font-semibold">Acties</th>
             </tr>
           </thead>
           <tbody>

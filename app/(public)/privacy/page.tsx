@@ -22,11 +22,31 @@ export default function PrivacyPage() {
 
       <section className="flex flex-col gap-2">
         <h2 className="font-display text-lg font-semibold">Wie dit kan zien</h2>
-        <p>
-          Andere studenten zien alleen je bijnaam en je plaats in het klassement (saldo + waarde van
-          open posities). Je eigen trades, puntenhistorie en exacte posities zijn alleen voor jou en
-          de beheerder zichtbaar.
-        </p>
+        <ul className="list-disc pl-5">
+          <li>
+            <strong>Klassement:</strong> iedere ingelogde student ziet van iedereen de bijnaam, het
+            saldo en de waarde van open posities. Dit kan niet worden uitgezet — het klassement is
+            altijd op naam, dat is het hele punt ervan.
+          </li>
+          <li>
+            <strong>Logboek:</strong> iedere ingelogde student ziet alle transacties van alle
+            spelers (welke markt, welke uitkomst, kopen/verkopen, aantal aandelen, punten en
+            tijdstip) — niet alleen je eigen transacties. Standaard staat jouw bijnaam erbij; dit
+            kun je op je{" "}
+            <a href="/profile" className="underline">
+              profielpagina
+            </a>{" "}
+            uitzetten, waarna jouw transacties verschijnen als &quot;Anonieme student&quot;. De
+            transactiedetails zelf (markt, bedrag, tijdstip) blijven dan nog steeds zichtbaar, alleen
+            niet aan jou gekoppeld. Transacties van de beheerder worden altijd getoond als
+            &quot;Beheerder&quot;, nooit met een naam.
+          </li>
+          <li>
+            <strong>Exacte posities en puntenhistorie:</strong> welke aandelen je precies in bezit
+            hebt en je volledige grootboek (elke bij- en afschrijving) zijn alleen voor jou en de
+            beheerder zichtbaar, nooit voor andere studenten.
+          </li>
+        </ul>
       </section>
 
       <section className="flex flex-col gap-2">

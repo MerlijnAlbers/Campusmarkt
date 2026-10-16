@@ -141,7 +141,11 @@ export function ExclusionsManager({
         </form>
       )}
 
-      {message && <p className="text-sm text-bad">{message}</p>}
+      {message && (
+        <p className="text-sm text-bad" role="status">
+          {message}
+        </p>
+      )}
     </section>
   );
 }
