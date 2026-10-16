@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function RulesPage() {
   return (
     <article className="flex flex-col gap-6 text-ink">
@@ -45,6 +47,14 @@ export default function RulesPage() {
           evenement gaat niet door). Dan krijgt iedereen zijn netto inleg in die markt terug.
         </p>
       </section>
+
+      <p className="text-sm text-muted">
+        Lees ook de{" "}
+        <Link href="/privacy" className="underline hover:text-ink">
+          privacypagina
+        </Link>{" "}
+        over wat we van je opslaan.
+      </p>
     </article>
   );
 }
