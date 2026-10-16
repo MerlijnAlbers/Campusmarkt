@@ -8,13 +8,14 @@ export default async function AdminMarketPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: market }, { data: outcomes }, { data: exclusions }, { data: students }, { count: tradeCount }] =
+  const [{ data: market }, { data: outcomes }, { data: exclusions }, { data: students }, { count: tradeCount }, { data: positions }] =
     await Promise.all([
       supabase.from("markets").select("*").eq("id", id).maybeSingle(),
       supabase.from("outcomes").select("*").eq("market_id", id).order("sort_order"),
       supabase.from("market_exclusions").select("*, profiles(display_name)").eq("market_id", id),
       supabase.from("profiles").select("id, display_name, email").eq("role", "student").order("display_name"),
       supabase.from("trades").select("*", { count: "exact", head: true }).eq("market_id", id),
+      supabase.from("positions").select("outcome_id, user_id, shares, net_spent").eq("market_id", id),
     ]);
 
   if (!market || !outcomes) {
@@ -27,6 +28,29 @@ export default async function AdminMarketPage({ params }: { params: Promise<{ id
 
   const n = outcomes.length;
   const maxLoss = market.b * Math.log(n);
+
+  // Impact-cijfers voor de bevestigingsstap bij afwikkelen/annuleren (zie AdminMarketActions).
+  const outcomeImpact: Record<string, { holders: number; payout: number }> = {};
+  for (const o of outcomes) outcomeImpact[o.id] = { holders: 0, payout: 0 };
+  for (const p of positions ?? []) {
+    const shares = Number(p.shares);
+    if (shares > 0 && outcomeImpact[p.outcome_id]) {
+      outcomeImpact[p.outcome_id].holders += 1;
+      outcomeImpact[p.outcome_id].payout += shares;
+    }
+  }
+  const netByUser = new Map<string, number>();
+  for (const p of positions ?? []) {
+    netByUser.set(p.user_id, (netByUser.get(p.user_id) ?? 0) + Number(p.net_spent));
+  }
+  let cancelHolders = 0;
+  let cancelTotal = 0;
+  for (const net of netByUser.values()) {
+    if (Math.abs(net) > 0.0001) {
+      cancelHolders += 1;
+      cancelTotal += net;
+    }
+  }
 
   return (
     <section className="flex flex-col gap-4">
@@ -65,6 +89,8 @@ export default async function AdminMarketPage({ params }: { params: Promise<{ id
         status={market.status}
         outcomes={outcomes.map((o) => ({ id: o.id, label: o.label }))}
         tradeCount={tradeCount ?? 0}
+        outcomeImpact={outcomeImpact}
+        cancelImpact={{ holders: cancelHolders, total: cancelTotal }}
       />
 
       <ExclusionsManager

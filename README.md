@@ -71,11 +71,22 @@ supabase test db  # pgTAP-databasetests in supabase/tests/
 
 ## Beheerdersaccount
 
-Het e-mailadres `m.albers@my.nyenrode.nl` krijgt automatisch de rol `admin` zodra het voor het
-eerst inlogt (lokaal via de inloglink, of straks via het schoolaccount) — zie
-`primary_admin_email()` in `supabase/migrations/0005_primary_admin_and_delete_market.sql`. Er is
-daarnaast een los testaccount `admin@my.nyenrode.nl` (wachtwoord `campusmarkt-test`) voor lokaal
-testen zonder je eigen adres te gebruiken.
+Er bestaat precies één beheerdersaccount (afgedwongen met een unieke database-index). Nieuwe
+accounts krijgen altijd de rol `student` — de app heeft zelf geen knop of functie om iemand
+beheerder te maken, ook niet voor een bestaande beheerder. Dat moet je eenmalig zelf doen met SQL,
+**na** je eerste keer inloggen met `m.albers@my.nyenrode.nl` (zodat het profiel al bestaat):
+
+```sql
+update profiles set role = 'admin' where email = 'm.albers@my.nyenrode.nl';
+```
+
+Voer dit lokaal uit tegen `postgresql://postgres:postgres@127.0.0.1:54322/postgres` (bijv. via
+Supabase Studio's SQL-editor op `http://127.0.0.1:54323`) of, voor het cloudproject, via het
+dashboard onder **SQL Editor**. Zet dit commando nooit met een echt e-mailadres in een migratie of
+commit — eerdere migraties deden dat via `primary_admin_email()`, wat het e-mailadres van de
+beheerder aan iedereen blootstelde; die functie is inmiddels verwijderd. Er is daarnaast een los
+testaccount `admin@my.nyenrode.nl` (wachtwoord `campusmarkt-test`, rol al `admin` via `seed.sql`)
+voor lokaal testen zonder je eigen adres te gebruiken.
 
 Een beheerder kan markten aanmaken, openen/sluiten, uitbetalen, annuleren en uitsluitingen
 beheren. **Verwijderen** kan alleen zolang een markt nog geen activiteit heeft (geen trades of

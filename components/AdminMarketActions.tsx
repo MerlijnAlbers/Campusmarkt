@@ -3,10 +3,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { formatPointsShort } from "@/lib/format";
 
 interface Outcome {
   id: string;
   label: string;
+}
+
+interface OutcomeImpact {
+  holders: number;
+  payout: number;
+}
+
+interface CancelImpact {
+  holders: number;
+  total: number;
 }
 
 export function AdminMarketActions({
@@ -14,11 +25,15 @@ export function AdminMarketActions({
   status,
   outcomes,
   tradeCount,
+  outcomeImpact,
+  cancelImpact,
 }: {
   marketId: string;
   status: string;
   outcomes: Outcome[];
   tradeCount: number;
+  outcomeImpact: Record<string, OutcomeImpact>;
+  cancelImpact: CancelImpact;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -55,7 +70,7 @@ export function AdminMarketActions({
         setMessage({ ok: false, text: error.message });
         return;
       }
-      router.push("/admin");
+      router.push("/admin/markets");
       return;
     }
 
@@ -160,10 +175,22 @@ export function AdminMarketActions({
             <div className="mt-2 rounded-md bg-sunk p-3">
               <p className="text-sm text-ink">
                 {pending === "void"
-                  ? "De markt wordt geannuleerd en iedereen krijgt zijn netto inleg terug."
+                  ? cancelImpact.holders === 0
+                    ? "De markt wordt geannuleerd. Niemand heeft nog ingelegd, er wordt niets teruggestort."
+                    : `De markt wordt geannuleerd. ${cancelImpact.holders} ${
+                        cancelImpact.holders === 1 ? "speler krijgt" : "spelers krijgen"
+                      } in totaal ca. ${formatPointsShort(cancelImpact.total)} punten netto inleg terug.`
                   : pending === "delete"
                     ? "De markt wordt permanent verwijderd. Dit kan niet ongedaan worden gemaakt."
-                    : `${outcomes.find((o) => o.id === pending)?.label} wint. Elk aandeel van die uitkomst betaalt 1 punt uit, de rest wordt 0.`}
+                    : (() => {
+                        const outcome = outcomes.find((o) => o.id === pending);
+                        const impact = outcomeImpact[pending] ?? { holders: 0, payout: 0 };
+                        return impact.holders === 0
+                          ? `${outcome?.label} wint. Niemand heeft aandelen in deze uitkomst, er wordt niets uitbetaald.`
+                          : `${outcome?.label} wint. ${impact.holders} ${
+                              impact.holders === 1 ? "speler deelt" : "spelers delen"
+                            } in totaal ${formatPointsShort(impact.payout)} punten; de rest wordt 0.`;
+                      })()}
               </p>
               <div className="mt-2 flex gap-2">
                 <button

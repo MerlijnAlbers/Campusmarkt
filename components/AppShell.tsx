@@ -8,6 +8,8 @@ import {
   BarChart3,
   BookOpen,
   Briefcase,
+  History,
+  LayoutDashboard,
   LogOut,
   Menu,
   PanelLeftClose,
@@ -16,6 +18,7 @@ import {
   TrendingUp,
   Trophy,
   User,
+  Users,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -33,7 +36,10 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
 ];
 
 const ADMIN_NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: "/admin", label: "Markten beheren", icon: Settings },
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/markets", label: "Markten beheren", icon: Settings },
+  { href: "/admin/users", label: "Gebruikers", icon: Users },
+  { href: "/admin/log", label: "Auditlog", icon: History },
   { href: "/admin/stats", label: "Statistieken", icon: BarChart3 },
 ];
 
@@ -79,7 +85,9 @@ function getCollapsedServerSnapshot() {
 }
 
 function isActivePath(pathname: string, href: string) {
-  if (href === "/") return pathname === "/";
+  // "/" en "/admin" zijn zelf ook het voorvoegsel van andere routes (bijv. "/admin/markets"),
+  // dus die mogen alleen bij een exacte match actief zijn, anders lichten meteen twee navitems op.
+  if (href === "/" || href === "/admin") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -291,7 +299,14 @@ export function AppShell({
         >
           {!collapsed && (
             <>
-              <span className="truncate font-mono text-sm text-ink">{displayName}</span>
+              <span className="flex items-center gap-1.5">
+                <span className="truncate font-mono text-sm text-ink">{displayName}</span>
+                {isAdmin && (
+                  <span className="shrink-0 rounded-full bg-accent/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
+                    Beheerder
+                  </span>
+                )}
+              </span>
               <span className="whitespace-nowrap rounded-full bg-sunk px-3 py-1 text-center font-mono text-sm text-ink">
                 {formatPoints(balance)}
               </span>
@@ -353,7 +368,14 @@ export function AppShell({
           </div>
           {renderNav(false, closeDrawer)}
           <div className="flex flex-col gap-2 border-t border-line px-3 py-3">
-            <span className="truncate font-mono text-sm text-ink">{displayName}</span>
+            <span className="flex items-center gap-1.5">
+              <span className="truncate font-mono text-sm text-ink">{displayName}</span>
+              {isAdmin && (
+                <span className="shrink-0 rounded-full bg-accent/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
+                  Beheerder
+                </span>
+              )}
+            </span>
             <button
               type="button"
               onClick={handleSignOut}

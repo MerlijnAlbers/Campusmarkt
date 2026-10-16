@@ -79,6 +79,11 @@ export default async function MarketPage({ params }: { params: Promise<{ id: str
             <dd className="text-ink">{formatDateTime(market.closes_at)}</dd>
           </div>
         </dl>
+        {market.status === "resolved" && market.resolved_at && (
+          <p className="mt-3 text-sm text-muted">
+            Uitkomst vastgesteld door de beheerder op {formatDateTime(market.resolved_at)}.
+          </p>
+        )}
       </section>
 
       <MarketLive
