@@ -20,16 +20,8 @@ export default async function AdminOverviewPage() {
   }
 
   return (
-    <section className="flex flex-col gap-6 px-4 py-6 sm:px-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-bold text-ink">Beheer</h1>
-        <Link
-          href="/admin/markets/new"
-          className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-ink"
-        >
-          Nieuwe markt
-        </Link>
-      </div>
+    <section className="flex flex-col gap-6">
+      <h1 className="font-display text-2xl font-bold text-ink">Beheer</h1>
 
       {STATUS_ORDER.map((status) => {
         const list = byStatus.get(status);

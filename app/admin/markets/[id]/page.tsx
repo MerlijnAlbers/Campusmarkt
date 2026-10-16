@@ -19,7 +19,7 @@ export default async function AdminMarketPage({ params }: { params: Promise<{ id
 
   if (!market || !outcomes) {
     return (
-      <section className="px-4 py-6 sm:px-6">
+      <section>
         <h1 className="font-display text-2xl font-bold text-ink">Markt niet gevonden</h1>
       </section>
     );
@@ -29,7 +29,7 @@ export default async function AdminMarketPage({ params }: { params: Promise<{ id
   const maxLoss = market.b * Math.log(n);
 
   return (
-    <section className="flex flex-col gap-4 px-4 py-6 sm:px-6">
+    <section className="flex flex-col gap-4">
       <div className="rounded-lg border border-line bg-surface p-4">
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <span className="rounded-full border border-current px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-accent">

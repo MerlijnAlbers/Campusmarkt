@@ -196,7 +196,7 @@ export default async function PortfolioPage() {
         {!ledger || ledger.length === 0 ? (
           <p className="mt-2 text-sm text-muted">Nog geen puntenmutaties.</p>
         ) : (
-          <div className="mt-3 max-h-96 overflow-y-auto">
+          <div className="mt-3 max-h-96 overflow-x-auto overflow-y-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">

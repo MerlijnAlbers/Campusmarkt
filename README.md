@@ -144,6 +144,56 @@ client.
 - De `service_role`-sleutel van Supabase wordt nergens in deze app gebruikt en staat niet in
   `.env.example`.
 
-## Uitrol (vanaf Fase 5)
+## Uitrol: Supabase-cloudproject + Vercel
 
-Instructies voor Vercel en een Supabase-cloudproject volgen in een latere fase.
+### 1. Supabase-cloudproject aanmaken
+
+1. Ga naar [supabase.com/dashboard](https://supabase.com/dashboard) → **New project**. Kies een
+   naam, wachtwoord voor de database en regio (bijv. Frankfurt voor een school in Nederland).
+2. Koppel je lokale project aan het cloudproject:
+   ```bash
+   supabase link --project-ref <jouw-project-ref>
+   ```
+   (De project-ref staat in de dashboard-URL en onder **Project Settings → General**.)
+3. Zet alle migraties (schema, cron, realtime) op het cloudproject:
+   ```bash
+   supabase db push
+   ```
+4. Zet `seed.sql` **niet** automatisch op productie (dat bevat testaccounts met een vast
+   wachtwoord). Maak in plaats daarvan het eerste echte beheerdersaccount door zelf een keer in te
+   loggen met `m.albers@my.nyenrode.nl` — dat account krijgt automatisch de rol `admin` (zie
+   "Beheerdersaccount" hierboven).
+5. Controleer onder **Database → Extensions** dat `pg_cron` en `pgtap` beschikbaar zijn (bij de
+   meeste Supabase-plannen staan ze al aan; `pg_cron` wordt door migratie `0002` ingeschakeld).
+6. Ga naar **Authentication → URL Configuration** en zet de **Site URL** en **Redirect URLs**
+   voorlopig op `http://localhost:3000` en `http://localhost:3000/auth/callback` — dit stel je in
+   stap 3 hieronder bij naar je echte Vercel-domein.
+7. (Optioneel maar aanbevolen voor meer dan een paar inloglinks per uur) stel onder
+   **Authentication → Email → SMTP Settings** een eigen SMTP-provider in (bijv. via de schoolmail
+   of een dienst als Resend/Postmark) — de standaard Supabase-mailer is bedoeld voor testen, niet
+   voor een hele klas.
+
+### 2. Omgevingsvariabelen
+
+Haal de **Project URL** en **anon public key** op onder **Project Settings → API**, en zet ze in
+Vercel (zie stap 3) als:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://<jouw-project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon public key>
+```
+
+### 3. Deployen op Vercel
+
+1. Push deze repository naar GitHub (of GitLab/Bitbucket).
+2. Ga naar [vercel.com/new](https://vercel.com/new), importeer de repository.
+3. Zet bij **Environment Variables** de twee variabelen uit stap 2.
+4. Klik **Deploy**.
+5. Zodra je het Vercel-domein weet (bijv. `campusmarkt.vercel.app` of een eigen domein), ga terug
+   naar Supabase → **Authentication → URL Configuration** en zet de **Site URL** en
+   **Redirect URLs** op dat echte domein plus `/auth/callback`.
+6. Stel daarna, als je dat wilt, de Azure-provider in op het cloudproject (zie "Inloggen met
+   schoolaccount" hierboven) met de production-redirect-URI
+   `https://<jouw-project-ref>.supabase.co/auth/v1/callback`.
+
+Nieuwe migraties die je later toevoegt, zet je telkens live met `supabase db push`.

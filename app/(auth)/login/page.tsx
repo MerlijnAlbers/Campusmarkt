@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 const SCHOOL_DOMAIN = "my.nyenrode.nl";
@@ -113,6 +114,16 @@ export default function LoginPage() {
             {message}
           </p>
         )}
+
+        <p className="mt-5 text-center text-xs text-muted">
+          <Link href="/regels" className="hover:text-ink">
+            Spelregels
+          </Link>
+          <span className="mx-2">·</span>
+          <Link href="/privacy" className="hover:text-ink">
+            Privacy
+          </Link>
+        </p>
       </div>
     </main>
   );
