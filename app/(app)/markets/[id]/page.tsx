@@ -1,12 +1,93 @@
+import { createClient } from "@/lib/supabase/server";
+import { formatDateTime, formatPointsShort } from "@/lib/format";
+import { STATUS_LABELS } from "@/lib/constants";
+import { MarketLive } from "@/components/MarketLive";
+
 export default async function MarketPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const [{ data: profile }, { data: market }, { data: outcomes }, { data: positions }, { data: history }] =
+    await Promise.all([
+      supabase.from("profiles").select("display_name, balance").eq("id", user.id).single(),
+      supabase.from("markets").select("*").eq("id", id).maybeSingle(),
+      supabase.from("outcomes").select("*").eq("market_id", id).order("sort_order"),
+      supabase.from("positions").select("*").eq("market_id", id),
+      supabase.rpc("get_price_history", { p_market: id }),
+    ]);
+
+  if (!market || !outcomes || outcomes.length === 0) {
+    return (
+      <section>
+        <h1 className="font-display text-2xl font-bold text-ink">Markt niet gevonden</h1>
+        <p className="mt-2 text-muted">
+          Deze markt bestaat niet (meer), of je hebt er geen toegang tot.
+        </p>
+      </section>
+    );
+  }
+
+  const n = outcomes.length;
+  const heldShares: Record<string, number> = {};
+  const netSpent: Record<string, number> = {};
+  for (const p of positions ?? []) {
+    heldShares[p.outcome_id] = Number(p.shares);
+    netSpent[p.outcome_id] = Number(p.net_spent);
+  }
+
+  const initialHistory =
+    history && history.length > 0
+      ? history.map((row) => ({ createdAt: row.created_at!, probs: row.probs_after as number[] }))
+      : [{ createdAt: market.created_at, probs: Array(n).fill(1 / n) }];
+
+  const tradeCount = history?.length ?? 0;
+  const maxLoss = market.b * Math.log(n);
 
   return (
-    <section>
-      <h1 className="font-display text-2xl font-bold text-ink">Markt</h1>
-      <p className="mt-2 text-muted">
-        Marktpagina voor <span className="font-mono">{id}</span> komt binnenkort.
-      </p>
-    </section>
+    <div className="flex flex-col gap-4">
+      <section className="rounded-lg border border-line bg-surface p-4">
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <span className="rounded-full border border-current px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-accent">
+            {STATUS_LABELS[market.status] ?? market.status}
+          </span>
+          <span className="font-mono text-muted">
+            b = {market.b} · {tradeCount} {tradeCount === 1 ? "transactie" : "transacties"} · max.
+            verlies pot {formatPointsShort(maxLoss)} pnt
+          </span>
+        </div>
+        <h1 className="mt-2 font-display text-2xl font-bold text-ink">{market.title}</h1>
+        {market.description && <p className="mt-1 text-muted">{market.description}</p>}
+        <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+          <div>
+            <dt className="text-muted">Resolutiecriteria</dt>
+            <dd className="text-ink">{market.resolution_criteria}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">Bron</dt>
+            <dd className="text-ink">{market.resolution_source}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">Sluit op</dt>
+            <dd className="text-ink">{formatDateTime(market.closes_at)}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <MarketLive
+        marketId={market.id}
+        b={market.b}
+        status={market.status}
+        winningOutcomeId={market.winning_outcome_id}
+        initialOutcomes={outcomes.map((o) => ({ id: o.id, label: o.label, q: Number(o.q) }))}
+        initialHistory={initialHistory}
+        userName={profile?.display_name ?? user.email ?? ""}
+        userBalance={Number(profile?.balance ?? 0)}
+        heldShares={heldShares}
+        netSpent={netSpent}
+      />
+    </div>
   );
 }
