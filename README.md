@@ -28,7 +28,7 @@ Gebouwd met Next.js (App Router), TypeScript, Tailwind CSS en Supabase (Postgres
    ```
 
    Dit draait automatisch de migraties in `supabase/migrations/` en de testdata in
-   `supabase/seed.sql`. De terminal toont daarna een `API URL` en `anon key`.
+   `supabase/seed.sql`. De terminal toont daarna een `API URL` en `publishable key`.
 
 3. Kopieer `.env.example` naar `.env.local` en vul de waarden uit stap 2 in:
 
@@ -38,7 +38,7 @@ Gebouwd met Next.js (App Router), TypeScript, Tailwind CSS en Supabase (Postgres
 
    ```
    NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key uit `supabase start`>
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable key uit `supabase start`>
    ```
 
 4. Start de Next.js-ontwikkelserver:
@@ -49,9 +49,9 @@ Gebouwd met Next.js (App Router), TypeScript, Tailwind CSS en Supabase (Postgres
 
    Open [http://localhost:3000](http://localhost:3000).
 
-5. Inloggen lokaal: vul op `/login` een e-mailadres van het schooldomein (`@my.nyenrode.nl`) in en
-   klik op "Stuur inloglink". Open **Inbucket** (de lokale e-mailtester) op
-   [http://127.0.0.1:54324](http://127.0.0.1:54324) om de inloglink te bekijken en te openen.
+5. Inloggen: `/login` wordt momenteel herbouwd op een uitnodiging + activatiecode (en optioneel
+   inloggen met Google) in plaats van een e-mail-inloglink — zie de livegangprompt voor de
+   actuele stand. Zodra die fase klaar is, komt hier de bijbehorende lokale inlogstap terug.
 
 6. Supabase Studio (databasebeheer in de browser) staat op
    [http://127.0.0.1:54323](http://127.0.0.1:54323).
@@ -170,57 +170,14 @@ SQL: `delete from auth.mfa_factors where user_id = '<user-id>';`.
    of een handmatige SQL-opdracht wordt toegekend — nooit via de app zelf — kan een aanvaller de
    rol niet zelf opnieuw toekennen nadat deze is ingetrokken.
 
-## Inloggen met schoolaccount (Microsoft Entra ID / Azure AD)
+## Inloggen en accounts (in herbouw)
 
-De app is voorbereid op inloggen via het Microsoft-schoolaccount van de student, met de
-e-mail-inloglink als terugvaloptie (voor lokaal testen en als ICT Azure niet toestaat). Om de
-Azure-provider daadwerkelijk te activeren:
-
-### In Azure (Microsoft Entra ID)
-
-1. Ga naar [Microsoft Entra admin center](https://entra.microsoft.com) → **App registrations** →
-   **New registration**.
-2. Geef de app een naam (bijv. "Campusmarkt"), kies het juiste tenant-type (meestal "Accounts in
-   this organizational directory only").
-3. Zet onder **Redirect URI** (type: Web):
-   - Lokaal: `http://127.0.0.1:54321/auth/v1/callback`
-   - Cloud: `https://<jouw-project-ref>.supabase.co/auth/v1/callback`
-4. Noteer de **Application (client) ID** en de **Directory (tenant) ID**.
-5. Ga naar **Certificates & secrets** → **New client secret**, en noteer de gegenereerde waarde
-   (dit is je `client secret`, niet de secret-ID).
-6. Ga naar **API permissions** en zorg dat minimaal `openid`, `email` en `profile` zijn toegestaan.
-
-### In Supabase
-
-**Lokaal** (`supabase/config.toml`, sectie `[auth.external.azure]`):
-
-```toml
-[auth.external.azure]
-enabled = true
-client_id = "env(SUPABASE_AUTH_EXTERNAL_AZURE_CLIENT_ID)"
-secret = "env(SUPABASE_AUTH_EXTERNAL_AZURE_SECRET)"
-url = "env(SUPABASE_AUTH_EXTERNAL_AZURE_URL)"
-```
-
-Zet de bijbehorende omgevingsvariabelen (niet in git!) voor je shell of in `supabase/.env`:
-
-```bash
-export SUPABASE_AUTH_EXTERNAL_AZURE_CLIENT_ID="<application client id>"
-export SUPABASE_AUTH_EXTERNAL_AZURE_SECRET="<client secret>"
-export SUPABASE_AUTH_EXTERNAL_AZURE_URL="https://login.microsoftonline.com/<tenant-id>/v2.0"
-```
-
-Herstart daarna `supabase start`.
-
-**Cloud** (Supabase dashboard): ga naar **Authentication → Providers → Azure**, vul de Client ID,
-Client Secret en de tenant-URL in, en zet de provider aan. Zet onder **Authentication → URL
-Configuration** de **Redirect URLs** op jouw productie-domein plus `/auth/callback`.
-
-## Schooldomein
-
-Alleen e-mailadressen van `@my.nyenrode.nl` kunnen een account aanmaken; dit wordt afgedwongen in de
-database (`allowed_email_domain()` in `supabase/migrations/0001_init.sql`), niet alleen in de
-client.
+De inlogmethode wordt vervangen: geen e-mailverkeer meer (geen magic links, geen Azure AD), maar
+een door de beheerder uitgegeven **activatiecode** (en optioneel **inloggen met Google** voor
+wie met een Gmail/Google-adres is uitgenodigd). Een account ontstaat alleen nog met een geldige
+uitnodiging — de domeincontrole (`allowed_email_domain()`) die dat voorheen deed, wordt daardoor
+overbodig en verdwijnt in de database-migratie die de uitnodigingen toevoegt. Zie de
+livegangprompt voor de volledige opzet en status per fase.
 
 ## Rollen en beveiliging
 
@@ -314,19 +271,18 @@ tabel een `using (true)`-leesbeleid heeft, en dat `anon` geen `EXECUTE` heeft op
 7. Ga naar **Authentication → URL Configuration** en zet de **Site URL** en **Redirect URLs**
    voorlopig op `http://localhost:3000` en `http://localhost:3000/auth/callback` — dit stel je later
    bij naar je echte Vercel-domein.
-8. (Optioneel maar aanbevolen voor meer dan een paar inloglinks per uur) stel onder
-   **Authentication → Email → SMTP Settings** een eigen SMTP-provider in (bijv. via de schoolmail
-   of een dienst als Resend/Postmark) — de standaard Supabase-mailer is bedoeld voor testen, niet
-   voor een hele klas.
+8. E-mailverkeer is niet meer nodig om in te loggen (uitnodigingen + activatiecode, en optioneel
+   Google) — er is dus geen eigen SMTP-provider nodig. **Confirm email** mag uit blijven staan
+   onder **Authentication → Sign In / Providers → Email**.
 
 ### 2. Omgevingsvariabelen
 
-Haal de **Project URL** en **anon public key** op onder **Project Settings → API**, en zet ze in
+Haal de **Project URL** en **publishable key** op onder **Project Settings → API**, en zet ze in
 Vercel (zie stap 3) als:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://<jouw-project-ref>.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon public key>
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable key>
 ```
 
 ### 3. Deployen op Vercel
@@ -338,8 +294,5 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon public key>
 5. Zodra je het Vercel-domein weet (bijv. `campusmarkt.vercel.app` of een eigen domein), ga terug
    naar Supabase → **Authentication → URL Configuration** en zet de **Site URL** en
    **Redirect URLs** op dat echte domein plus `/auth/callback`.
-6. Stel daarna, als je dat wilt, de Azure-provider in op het cloudproject (zie "Inloggen met
-   schoolaccount" hierboven) met de production-redirect-URI
-   `https://<jouw-project-ref>.supabase.co/auth/v1/callback`.
 
 Nieuwe migraties die je later toevoegt, zet je telkens live met `supabase db push`.

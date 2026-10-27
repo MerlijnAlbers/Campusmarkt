@@ -33,11 +33,13 @@ function loadEnvLocal(): Record<string, string> {
 const env = { ...loadEnvLocal(), ...process.env } as Record<string, string | undefined>;
 
 const SUPABASE_URL = env.NEXT_PUBLIC_SUPABASE_URL;
-const ANON_KEY = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const ANON_KEY = env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const DB_URL = env.SUPABASE_DB_URL ?? "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
 
 if (!SUPABASE_URL || !ANON_KEY) {
-  console.error("NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY ontbreken (.env.local).");
+  console.error(
+    "NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ontbreken (.env.local).",
+  );
   process.exit(1);
 }
 
