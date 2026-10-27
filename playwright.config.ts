@@ -1,7 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
-// Deze suite draait alleen lokaal tegen de lokale Supabase-instantie (Mailpit voor magic
-// links, een echte Postgres-verbinding voor testopzet). Niet bedoeld voor CI zonder die stack.
+// Deze suite draait alleen lokaal tegen de lokale Supabase-instantie (een echte
+// Postgres-verbinding voor testopzet). Niet bedoeld voor CI zonder die stack.
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,

@@ -49,9 +49,11 @@ Gebouwd met Next.js (App Router), TypeScript, Tailwind CSS en Supabase (Postgres
 
    Open [http://localhost:3000](http://localhost:3000).
 
-5. Inloggen: `/login` wordt momenteel herbouwd op een uitnodiging + activatiecode (en optioneel
-   inloggen met Google) in plaats van een e-mail-inloglink — zie de livegangprompt voor de
-   actuele stand. Zodra die fase klaar is, komt hier de bijbehorende lokale inlogstap terug.
+5. Inloggen lokaal: er bestaat geen signupformulier in de UI — een account ontstaat alleen met
+   een uitnodiging. Gebruik een van de testaccounts uit `supabase/seed.sql`
+   (bijv. `sanne@my.nyenrode.nl`, wachtwoord `campusmarkt-test`) om op `/login` in te loggen, of
+   maak zelf een uitnodiging via SQL en activeer die op `/activate` (zie "Inloggen en accounts"
+   hieronder).
 
 6. Supabase Studio (databasebeheer in de browser) staat op
    [http://127.0.0.1:54323](http://127.0.0.1:54323).
@@ -175,14 +177,14 @@ SQL: `delete from auth.mfa_factors where user_id = '<user-id>';`.
    app zelf — kan een aanvaller de
    rol niet zelf opnieuw toekennen nadat deze is ingetrokken.
 
-## Inloggen en accounts (in herbouw)
+## Inloggen en accounts
 
-De inlogmethode wordt vervangen: geen e-mailverkeer meer (geen magic links, geen Azure AD), maar
-een door de beheerder uitgegeven **activatiecode** (en optioneel **inloggen met Google** voor
-wie met een Gmail/Google-adres is uitgenodigd). Een account ontstaat alleen nog met een geldige
-uitnodiging — de domeincontrole (`allowed_email_domain()`) die dat voorheen deed, wordt daardoor
-overbodig en verdwijnt in de database-migratie die de uitnodigingen toevoegt. Zie de
-livegangprompt voor de volledige opzet en status per fase.
+Geen e-mailverkeer: geen magic links, geen Azure AD. Een account ontstaat alleen met een door de
+beheerder uitgegeven **activatiecode** (`/activate`), of — als het uitgenodigde adres een
+Google-account is — door **in te loggen met Google** op `/login` (ook dan moet er eerst een
+uitnodiging bestaan). Wachtwoord vergeten verloopt via een resetcode op `/reset`. Zie
+`app/(auth)/{login,activate,reset}/page.tsx` en `app/api/auth/reset/route.ts` voor de
+implementatie, en de livegangprompt voor de volledige opzet en status per fase.
 
 ## Rollen en beveiliging
 

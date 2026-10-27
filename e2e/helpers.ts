@@ -2,30 +2,17 @@ import type { Page } from "@playwright/test";
 import { totp } from "../test-support/totp";
 
 export const BASE_URL = "http://localhost:3000";
-const MAILPIT_URL = "http://127.0.0.1:54324";
 
-async function getLatestLinkFor(email: string): Promise<string> {
-  const res = await fetch(`${MAILPIT_URL}/api/v1/messages?limit=20`);
-  const data = await res.json();
-  const msg = data.messages.find((m: { To?: { Address: string }[] }) =>
-    m.To?.some((t) => t.Address === email),
-  );
-  if (!msg) throw new Error(`geen e-mail gevonden voor ${email}`);
-  const full = await (await fetch(`${MAILPIT_URL}/api/v1/message/${msg.ID}`)).json();
-  const body: string = full.Text || full.HTML;
-  const match = body.match(/http:\/\/127\.0\.0\.1:54321\/auth\/v1\/verify\?[^\s"<)]+/);
-  if (!match) throw new Error("geen magic link gevonden in e-mail");
-  return match[0];
-}
+// Wachtwoord van alle testaccounts uit supabase/seed.sql.
+const TEST_PASSWORD = "campusmarkt-test";
 
-/** Logt in via de echte magic-link-flow (Mailpit), zoals een speler/beheerder dat ook doet. */
+/** Logt in via de echte /login-flow (e-mail + wachtwoord), zoals een speler/beheerder dat ook doet. */
 export async function loginAs(page: Page, email: string): Promise<void> {
   await page.goto(`${BASE_URL}/login`);
-  await page.fill('input[type="email"]', email);
+  await page.fill("#email", email);
+  await page.fill("#password", TEST_PASSWORD);
   await page.click('button[type="submit"]');
-  await page.waitForTimeout(800);
-  const link = await getLatestLinkFor(email);
-  await page.goto(link);
+  await page.waitForURL(`${BASE_URL}/`, { timeout: 10000 }).catch(() => {});
   await page.waitForLoadState("networkidle");
 }
 

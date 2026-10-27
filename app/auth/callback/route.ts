@@ -14,5 +14,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?fout=inloglink_ongeldig`);
+  return NextResponse.redirect(`${origin}/login?fout=google`);
 }
