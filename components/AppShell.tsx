@@ -11,6 +11,7 @@ import {
   History,
   LayoutDashboard,
   LogOut,
+  Mail,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
@@ -38,6 +39,7 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
 const ADMIN_NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/markets", label: "Markten beheren", icon: Settings },
+  { href: "/admin/invitations", label: "Uitnodigingen", icon: Mail },
   { href: "/admin/users", label: "Gebruikers", icon: Users },
   { href: "/admin/log", label: "Auditlog", icon: History },
   { href: "/admin/stats", label: "Statistieken", icon: BarChart3 },
