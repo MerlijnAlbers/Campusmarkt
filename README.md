@@ -101,22 +101,26 @@ testaccounts en 50 testmarkten zijn niet bedoeld om te blijven staan.
 
 ## Beheerdersaccount
 
-Er bestaat precies één beheerdersaccount (afgedwongen met een unieke database-index). Nieuwe
-accounts krijgen altijd de rol `student` — de app heeft zelf geen knop of functie om iemand
-beheerder te maken, ook niet voor een bestaande beheerder. Dat moet je eenmalig zelf doen met SQL,
-**na** je eerste keer inloggen met `m.albers@my.nyenrode.nl` (zodat het profiel al bestaat):
+Er bestaat precies één beheerdersaccount (afgedwongen met een unieke database-index). De rol
+wordt automatisch toegekend bij activatie aan het e-mailadres dat in `app_config.admin_email`
+staat. Zet dat adres eenmalig zelf via SQL — nooit in een migratie of commit, dat lekte eerder al
+eens via `primary_admin_email()` (inmiddels verwijderd):
 
 ```sql
-update profiles set role = 'admin' where email = 'm.albers@my.nyenrode.nl';
+insert into app_config (key, value) values ('admin_email', '<jouw e-mailadres>')
+  on conflict (key) do update set value = excluded.value;
 ```
 
 Voer dit lokaal uit tegen `postgresql://postgres:postgres@127.0.0.1:54322/postgres` (bijv. via
 Supabase Studio's SQL-editor op `http://127.0.0.1:54323`) of, voor het cloudproject, via het
-dashboard onder **SQL Editor**. Zet dit commando nooit met een echt e-mailadres in een migratie of
-commit — eerdere migraties deden dat via `primary_admin_email()`, wat het e-mailadres van de
-beheerder aan iedereen blootstelde; die functie is inmiddels verwijderd. Er is daarnaast een los
-testaccount `admin@my.nyenrode.nl` (wachtwoord `campusmarkt-test`, rol al `admin` via `seed.sql`)
-voor lokaal testen zonder je eigen adres te gebruiken.
+dashboard onder **SQL Editor**. Omdat er op dat moment nog geen beheerder bestaat om jezelf een
+uitnodiging te geven, maak je die eerste uitnodiging ook rechtstreeks via SQL — zie de
+livegangprompt, Fase 6, voor de exacte stappen en hoe je daarna via `/activate` een wachtwoord
+instelt. Elke volgende uitnodiging (voor studenten) verloopt via het beheerscherm
+(`/admin/invitations`).
+
+Er is daarnaast een los testaccount `admin@my.nyenrode.nl` (wachtwoord `campusmarkt-test`, rol al
+`admin` via `seed.sql`) voor lokaal testen zonder je eigen adres te gebruiken.
 
 Een beheerder kan markten aanmaken, openen/sluiten, uitbetalen, annuleren en uitsluitingen
 beheren. **Verwijderen** kan alleen zolang een markt nog geen activiteit heeft (geen trades of
@@ -166,8 +170,9 @@ SQL: `delete from auth.mfa_factors where user_id = '<user-id>';`.
    is gecontroleerd.
 3. Controleer `admin_actions` (het auditlog van alle beheerhandelingen) op acties die niet door de
    rechtmatige beheerder zijn uitgevoerd.
-4. Omdat de rol `admin` uitsluitend via `primary_admin_email()` (zie "Beheerdersaccount" hierboven)
-   of een handmatige SQL-opdracht wordt toegekend — nooit via de app zelf — kan een aanvaller de
+4. Omdat de rol `admin` uitsluitend via `app_config.admin_email` bij activatie (zie
+   "Beheerdersaccount" hierboven) of een handmatige SQL-opdracht wordt toegekend — nooit via de
+   app zelf — kan een aanvaller de
    rol niet zelf opnieuw toekennen nadat deze is ingetrokken.
 
 ## Inloggen en accounts (in herbouw)

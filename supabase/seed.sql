@@ -1,10 +1,13 @@
 -- Testaccounts en voorbeeldmarkten voor lokale ontwikkeling.
--- Wachtwoorden zijn hier niet relevant: iedereen logt in met de e-mail-inloglink (of straks het
--- schoolaccount). Het wachtwoord is alleen een technisch vereiste van de auth.users-tabel.
+-- Wachtwoorden zijn hier niet relevant: in het echie activeert iedereen met een uitnodiging +
+-- activatiecode (of Google). Het wachtwoord is alleen een technisch vereiste van de
+-- auth.users-tabel.
 
 create extension if not exists pgcrypto;
 
 -- ===== Testaccounts: 1 beheerder + 4 studenten =====
+-- Elk testaccount krijgt eerst een uitnodiging, net als in het echie, met een vaste code
+-- ('12345678') — dit is alleen lokale, niet-geheime testdata, dus dat mag.
 do $$
 declare
   v_users jsonb := '[
@@ -16,9 +19,13 @@ declare
   ]'::jsonb;
   v_user jsonb;
   v_id uuid;
+  v_code text := '12345678';
 begin
   for v_user in select * from jsonb_array_elements(v_users) loop
     v_id := gen_random_uuid();
+
+    insert into invitations (email, purpose, code_hash, expires_at)
+    values (v_user ->> 'email', 'activate', crypt(v_code, gen_salt('bf')), now() + interval '7 days');
 
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -27,7 +34,8 @@ begin
     ) values (
       '00000000-0000-0000-0000-000000000000', v_id, 'authenticated', 'authenticated',
       v_user ->> 'email', crypt('campusmarkt-test', gen_salt('bf')), now(),
-      now(), '{"provider":"email","providers":["email"]}', '{}',
+      now(), '{"provider":"email","providers":["email"]}',
+      jsonb_build_object('activation_code', v_code),
       now(), now(), '', '', '', ''
     );
 

@@ -28,6 +28,9 @@ begin
     v_id := gen_random_uuid();
     v_email := 'perf' || lpad(i::text, 3, '0') || '@my.nyenrode.nl';
 
+    insert into invitations (email, purpose, code_hash, expires_at)
+    values (v_email, 'activate', crypt('12345678', gen_salt('bf')), now() + interval '7 days');
+
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
       last_sign_in_at, raw_app_meta_data, raw_user_meta_data,
@@ -35,7 +38,8 @@ begin
     ) values (
       '00000000-0000-0000-0000-000000000000', v_id, 'authenticated', 'authenticated',
       v_email, crypt('campusmarkt-test', gen_salt('bf')), now(),
-      now(), '{"provider":"email","providers":["email"]}', '{}',
+      now(), '{"provider":"email","providers":["email"]}',
+      jsonb_build_object('activation_code', '12345678'),
       now(), now(), '', '', '', ''
     );
 
