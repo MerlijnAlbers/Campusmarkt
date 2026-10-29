@@ -50,6 +50,11 @@ export async function POST(request: Request) {
   });
 
   if (consumeError || !userId) {
+    if (consumeError) {
+      // Tijdelijke diagnose-logging (livegang) — verwijdert geen gevoelige gegevens van de
+      // gebruiker, alleen de technische Supabase-foutmelding zelf.
+      console.error("[reset] consume_reset_code RPC-fout:", consumeError);
+    }
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 400 });
   }
 
@@ -57,6 +62,7 @@ export async function POST(request: Request) {
     password: parsed.data.password,
   });
   if (updateError) {
+    console.error("[reset] updateUserById-fout:", updateError);
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 400 });
   }
 
