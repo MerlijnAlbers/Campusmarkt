@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 
@@ -23,6 +23,15 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Campusmarkt",
   description: "Voorspellingsmarkt met speelpunten voor studenten",
+  appleWebApp: {
+    title: "Campusmarkt",
+    capable: true,
+    statusBarStyle: "black-translucent",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#031d3a",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
