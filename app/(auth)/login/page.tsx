@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
@@ -65,8 +66,15 @@ function LoginForm() {
   return (
     <main className="flex flex-1 items-center justify-center bg-bg px-4 py-10">
       <div className="w-full max-w-sm rounded-xl border border-line bg-surface p-6">
-        <h1 className="font-display text-2xl font-bold text-ink">Campusmarkt</h1>
-        <p className="mt-1 text-sm text-muted">Log in om te handelen met speelpunten.</p>
+        <Image
+          src="/logo-full.png"
+          alt="Campusmarkt"
+          width={900}
+          height={653}
+          className="mx-auto h-auto w-48"
+          priority
+        />
+        <p className="mt-3 text-center text-sm text-muted">Log in om te handelen met speelpunten.</p>
 
         <button
           type="button"

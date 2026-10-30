@@ -1,60 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #eef1ee;
-  --surface: #fbfcfa;
-  --sunk: #e3e8e4;
-  --line: #cdd5cf;
-  --ink: #17231e;
-  --muted: #55625b;
-  --accent: #2f3fb0;
-  --accent-ink: #ffffff;
-  --o1: #0e7a68;
-  --o2: #a03268;
-  --o3: #a86400;
-  --o4: #4251c9;
-  --o5: #5b6770;
-  --good: #1b7737;
-  --bad: #b4262b;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #101714;
-    --surface: #17201c;
-    --sunk: #0c1210;
-    --line: #2a3731;
-    --ink: #e3ebe6;
-    --muted: #98a69e;
-    --accent: #8e9cff;
-    --accent-ink: #0f1430;
-    --o1: #3cc4aa;
-    --o2: #e070a6;
-    --o3: #e3a23a;
-    --o4: #8e9cff;
-    --o5: #9aa8b3;
-    --good: #5bcf7f;
-    --bad: #ff8085;
-    color-scheme: dark;
-  }
-}
-
-:root[data-theme="dark"] {
-  --bg: #101714;
-  --surface: #17201c;
-  --sunk: #0c1210;
-  --line: #2a3731;
-  --ink: #e3ebe6;
-  --muted: #98a69e;
-  --accent: #8e9cff;
-  --accent-ink: #0f1430;
-  --o1: #3cc4aa;
-  --o2: #e070a6;
-  --o3: #e3a23a;
-  --o4: #8e9cff;
-  --o5: #9aa8b3;
-  --good: #5bcf7f;
-  --bad: #ff8085;
+  /* Campusmarkt-huisstijl: kasteel Nyenrode, donkerblauw dominant, goud gericht ingezet. */
+  --bg: #031b38;
+  --surface: #102b4c;
+  --sunk: #0a2140;
+  --line: #24456e;
+  --ink: #f7f2e8;
+  --muted: #a9b7c9;
+  --accent: #e8b95b;
+  --accent-ink: #031b38;
+  --o1: #e8b95b;
+  --o2: #b8395c;
+  --o3: #a9b7c9;
+  --o4: #4c6e91;
+  --o5: #8e6a3c;
+  --good: #e8b95b;
+  --bad: #e2496b;
   color-scheme: dark;
 }
 
@@ -74,15 +36,21 @@
   --color-outcome-5: var(--o5);
   --color-good: var(--good);
   --color-bad: var(--bad);
-  --font-display: var(--font-bricolage), "Segoe UI", system-ui, sans-serif;
-  --font-body: var(--font-plex-sans), "Segoe UI", system-ui, sans-serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, Menlo, Consolas, monospace;
+  --font-display: var(--font-cormorant), "Cambria", Georgia, serif;
+  --font-body: var(--font-inter), "Segoe UI", system-ui, sans-serif;
+  --font-mono: var(--font-inter), "Segoe UI", system-ui, sans-serif;
+  --radius-lg: 14px;
+  --radius-xl: 14px;
 }
 
 body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-body);
+}
+
+.font-mono {
+  font-variant-numeric: tabular-nums;
 }
 
 :focus-visible {

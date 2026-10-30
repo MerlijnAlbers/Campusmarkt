@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
@@ -75,7 +76,15 @@ export default function ActivatePage() {
     return (
       <main className="flex flex-1 items-center justify-center bg-bg px-4 py-10">
         <div className="w-full max-w-sm rounded-xl border border-line bg-surface p-6 text-center">
-          <h1 className="font-display text-2xl font-bold text-ink">Welkom bij Campusmarkt!</h1>
+          <Image
+            src="/logo-full.png"
+            alt="Campusmarkt"
+            width={900}
+            height={653}
+            className="mx-auto h-auto w-40"
+            priority
+          />
+          <h1 className="mt-3 font-display text-2xl font-bold text-ink">Welkom bij Campusmarkt!</h1>
           <p className="mt-2 text-sm text-muted">
             Je account is geactiveerd en je hebt 1.000 startpunten gekregen.
           </p>
@@ -93,8 +102,15 @@ export default function ActivatePage() {
   return (
     <main className="flex flex-1 items-center justify-center bg-bg px-4 py-10">
       <div className="w-full max-w-sm rounded-xl border border-line bg-surface p-6">
-        <h1 className="font-display text-2xl font-bold text-ink">Campusmarkt</h1>
-        <p className="mt-1 text-sm text-muted">
+        <Image
+          src="/logo-full.png"
+          alt="Campusmarkt"
+          width={900}
+          height={653}
+          className="mx-auto h-auto w-48"
+          priority
+        />
+        <p className="mt-3 text-center text-sm text-muted">
           Activeer je account met de code die je van je beheerder hebt gekregen.
         </p>
 

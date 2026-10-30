@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -84,6 +85,15 @@ function subscribeCollapsed(callback: () => void) {
 
 function getCollapsedServerSnapshot() {
   return false;
+}
+
+function Logo({ withLabel = true }: { withLabel?: boolean }) {
+  return (
+    <span className="flex items-center gap-2">
+      <Image src="/logo-mark.png" alt="" width={28} height={28} className="h-7 w-7 flex-none" priority />
+      {withLabel && <span className="font-display text-lg font-bold text-ink">Campusmarkt</span>}
+    </span>
+  );
 }
 
 function isActivePath(pathname: string, href: string) {
@@ -264,8 +274,8 @@ export function AppShell({
         >
           <Menu className="h-5 w-5" aria-hidden="true" />
         </button>
-        <Link href="/" className="font-display text-lg font-bold text-ink">
-          Campusmarkt
+        <Link href="/">
+          <Logo />
         </Link>
         <span className="whitespace-nowrap rounded-full bg-sunk px-3 py-1 font-mono text-sm text-ink">
           {formatPoints(balance)}
@@ -278,12 +288,12 @@ export function AppShell({
           collapsed ? "w-[72px]" : "w-[240px]"
         }`}
       >
-        <div className="flex items-center justify-between gap-2 px-3 py-4">
-          {!collapsed && (
-            <Link href="/" className="font-display text-lg font-bold text-ink">
-              Campusmarkt
-            </Link>
-          )}
+        <div
+          className={`flex items-center gap-2 px-3 py-4 ${collapsed ? "flex-col" : "justify-between"}`}
+        >
+          <Link href="/" aria-label="Campusmarkt">
+            <Logo withLabel={!collapsed} />
+          </Link>
           <button
             type="button"
             onClick={toggleCollapsed}
@@ -364,7 +374,7 @@ export function AppShell({
           }`}
         >
           <div className="flex items-center justify-between px-4 py-4">
-            <span className="font-display text-lg font-bold text-ink">Campusmarkt</span>
+            <Logo />
             <button
               type="button"
               onClick={closeDrawer}
